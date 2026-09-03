@@ -1,10 +1,10 @@
-import React, { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { 
   Wallet, TrendingUp, TrendingDown, Plus, Trash2, 
-  Calendar, Tag, DollarSign, Euro, PoundSterling, IndianRupee, JapaneseYen, PieChart as PieChartIcon,
+  Calendar, DollarSign, Euro, PoundSterling, IndianRupee, JapaneseYen, PieChart as PieChartIcon,
   CreditCard, Activity, ArrowRightLeft, Sparkles, Wand2, Loader2, Bot,
-  Moon, Sun, AlertTriangle, Download, Target, Award, History, Settings, Landmark, Users, CheckCircle, X,
-  Percent, BarChart, Flame, Repeat, Clock, Calculator, ArrowRight, Camera, Trophy, Search, Share2, Edit2, RefreshCw,
+  Moon, Sun, Download, History, Settings, Landmark, CheckCircle, X,
+  BarChart, Flame, Repeat, Clock, Camera, Search, Share2, Edit2, RefreshCw,
   Upload, DownloadCloud, FileText, ChevronRight, Key
 } from 'lucide-react';
 
@@ -87,7 +87,10 @@ const CURRENCIES = [
   { code: 'JPY', icon: JapaneseYen, label: 'JPY (¥)' },
 ];
 
-const getMonthString = (date) => new Date(date).toISOString().slice(0, 7);
+const getMonthString = (date) => {
+  const parsedDate = new Date(date);
+  return Number.isNaN(parsedDate.getTime()) ? '' : parsedDate.toISOString().slice(0, 7);
+};
 
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -115,7 +118,7 @@ export default function App() {
   const [categoryTargets, setCategoryTargets] = useState({});
   const [showBudgetSettings, setShowBudgetSettings] = useState(false);
 
-  const [expectedIncome, setExpectedIncome] = useState(0);
+  const [expectedIncome] = useState(0);
   const [recurring, setRecurring] = useState([]);
   const [planned, setPlanned] = useState([]);
   const [recurringForm, setRecurringForm] = useState({ name: '', amount: '', day: '1', category: 'utilities' });
@@ -185,7 +188,7 @@ export default function App() {
     return { currentMonthData: current, previousMonthData: prev, highestSavingsMonth: bestMonth ? { month: bestMonth, savings: maxSavings } : null };
   }, [monthlyData, selectedMonth]);
 
-  const { totalIncome, totalExpense, balance } = useMemo(() => {
+  const { balance } = useMemo(() => {
     return transactions.reduce((acc, curr) => {
       if (curr.type === 'income') { acc.totalIncome += curr.amount; acc.balance += curr.amount; }
       else { acc.totalExpense += curr.amount; acc.balance -= curr.amount; }
@@ -243,8 +246,10 @@ export default function App() {
 
   const noSpendStreak = useMemo(() => {
     let streak = 0; let d = new Date('2026-09-02'); d.setHours(0, 0, 0, 0);
-    const expenseDates = new Set(transactions.filter(t => t.type === 'expense').map(t => new Date(t.date).toISOString().split('T')[0]));
-    while (true) {
+    const expenseDates = new Set(transactions
+      .filter(t => t.type === 'expense' && !Number.isNaN(new Date(t.date).getTime()))
+      .map(t => new Date(t.date).toISOString().split('T')[0]));
+    while (streak < 3650) {
       const dateStr = d.toISOString().split('T')[0];
       if (!expenseDates.has(dateStr)) { streak++; d.setDate(d.getDate() - 1); } else break;
     }
@@ -444,14 +449,14 @@ export default function App() {
         const data = JSON.parse(event.target.result);
         if (data.transactions) setTransactions(data.transactions);
         setToast({ message: 'Data completely restored!' });
-      } catch (err) { setToast({ message: 'Invalid backup file!' }); }
+      } catch { setToast({ message: 'Invalid backup file!' }); }
       setTimeout(() => setToast(null), 4000);
     };
     reader.readAsText(file);
   };
 
   const handlePrint = () => {
-    try { window.print(); } catch (e) {
+    try { window.print(); } catch {
       setToast({ message: 'Printing blocked by browser. Press Ctrl+P or Cmd+P.' });
       setTimeout(() => setToast(null), 4000);
     }
@@ -483,7 +488,7 @@ export default function App() {
           setFormData(prev => ({ ...prev, type: 'expense', amount: parsed.amount || '', category: parsed.category || 'other_expense', date: parsed.date || prev.date, note: parsed.note || '' }));
           setToast({ message: 'Receipt scanned! Please confirm details below.' });
         }
-      } catch (err) { setToast({ message: 'Failed to scan receipt. Please check your API Key.' }); } 
+      } catch { setToast({ message: 'Failed to scan receipt. Please check your API Key.' }); } 
       finally { setIsScanning(false); if (fileInputRef.current) fileInputRef.current.value = ''; setTimeout(() => setToast(null), 4000); }
     };
     reader.readAsDataURL(file);
@@ -512,7 +517,7 @@ export default function App() {
         setTransactionAnimation({ type: 'expense', amount: newT.amount, id: Date.now() });
         setTimeout(() => setTransactionAnimation(null), 1800);
       }
-    } catch (err) {
+    } catch {
       setToast({ message: 'Magic Add failed. Check your API key.' });
     } finally {
       setIsMagicLoading(false);
