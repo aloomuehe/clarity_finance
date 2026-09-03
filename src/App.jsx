@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Wallet, TrendingUp, TrendingDown, Plus, Trash2, 
   Calendar, DollarSign, Euro, PoundSterling, IndianRupee, JapaneseYen, PieChart as PieChartIcon,
@@ -97,7 +97,7 @@ export default function App() {
   const [transactionAnimation, setTransactionAnimation] = useState(null);
   
   // API Key state retrieved/stored securely in localStorage
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('clarity_gemini_key') || '');
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('clarity_api_key') || localStorage.getItem('clarity_gemini_key') || '');
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [tempApiKey, setTempApiKey] = useState('');
 
@@ -149,9 +149,18 @@ export default function App() {
   const [calendarYear, setCalendarYear] = useState(parseInt(selectedMonth.split('-')[0]));
   const [heatmapThresholds, setHeatmapThresholds] = useState({ green: 50, yellow: 150, orange: 300 });
 
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
+
   const saveApiKey = () => {
-    localStorage.setItem('clarity_gemini_key', tempApiKey.trim());
-    setApiKey(tempApiKey.trim());
+    const key = tempApiKey.trim();
+    localStorage.setItem('clarity_api_key', key);
+    setApiKey(key);
     setShowApiKeyModal(false);
     setToast({ message: 'API Key saved successfully!' });
     setTimeout(() => setToast(null), 3000);
@@ -245,11 +254,13 @@ export default function App() {
   }, [currentMonthData, monthlyTarget, categoryTargets, currency]);
 
   const noSpendStreak = useMemo(() => {
-    let streak = 0; let d = new Date('2026-09-02'); d.setHours(0, 0, 0, 0);
-    const expenseDates = new Set(transactions
-      .filter(t => t.type === 'expense' && !Number.isNaN(new Date(t.date).getTime()))
-      .map(t => new Date(t.date).toISOString().split('T')[0]));
-    while (streak < 3650) {
+    const expenseList = transactions.filter(t => t.type === 'expense' && !Number.isNaN(new Date(t.date).getTime()));
+    if (expenseList.length === 0) return 0;
+    let streak = 0; 
+    let d = new Date('2026-09-02'); 
+    d.setHours(0, 0, 0, 0);
+    const expenseDates = new Set(expenseList.map(t => new Date(t.date).toISOString().split('T')[0]));
+    while (streak < 365) {
       const dateStr = d.toISOString().split('T')[0];
       if (!expenseDates.has(dateStr)) { streak++; d.setDate(d.getDate() - 1); } else break;
     }
@@ -283,7 +294,8 @@ export default function App() {
   }, [recurring, planned, expectedIncome, balance, currentMonthData]);
 
   const financialHealth = useMemo(() => {
-    let score = 0; let breakdown = [];
+    let score = 0; 
+    let breakdown = [];
     const savingsRateVal = currentMonthData.income > 0 ? (currentMonthData.savings / currentMonthData.income) : 0;
     if (savingsRateVal >= 0.2) { score += 30; breakdown.push("Excellent savings rate (>= 20%)"); }
     else if (savingsRateVal > 0) { score += 15; breakdown.push("Positive savings rate, but under 20%"); }
@@ -335,7 +347,8 @@ export default function App() {
   };
 
   const sixMonthTrend = useMemo(() => {
-    const trend = []; let currentDate = new Date(`${selectedMonth}-01`);
+    const trend = []; 
+    let currentDate = new Date(`${selectedMonth}-01`);
     for(let i = 5; i >= 0; i--) {
       const d = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
       const mStr = getMonthString(d);
@@ -368,14 +381,16 @@ export default function App() {
     const newTransaction = { id: editingId ? editingId : Date.now().toString(), ...formData, amount: amountNum };
     if (editingId) {
       setTransactions(prev => prev.map(t => t.id === editingId ? newTransaction : t));
-      setEditingId(null); setToast({ message: 'Transaction updated successfully' });
+      setEditingId(null); 
+      setToast({ message: 'Transaction updated successfully' });
     } else {
       setTransactions(prev => [newTransaction, ...prev]);
       setTransactionAnimation({ type: newTransaction.type, amount: amountNum, id: Date.now() });
       setTimeout(() => setTransactionAnimation(null), 1800);
     }
     setFormData({ type: 'expense', amount: '', category: 'food', paymentMethod: 'upi', date: '2026-09-02', note: '' });
-    setIsSplit(false); setSplitDetails({ person: '', amount: '' });
+    setIsSplit(false); 
+    setSplitDetails({ person: '', amount: '' });
     setSelectedMonth(getMonthString(newTransaction.date));
   };
 
@@ -383,7 +398,7 @@ export default function App() {
     const tToDelete = transactions.find(t => t.id === id);
     setTransactions(prev => prev.filter(t => t.id !== id));
     setToast({
-      message: `Deleted ${tToDelete.category} transaction`,
+      message: `Deleted ${tToDelete?.category || 'transaction'}`,
       undoAction: () => { setTransactions(prev => [tToDelete, ...prev].sort((a,b) => new Date(b.date) - new Date(a.date))); setToast(null); }
     });
     setTimeout(() => setToast(null), 6000);
@@ -400,7 +415,8 @@ export default function App() {
     if (!recurringForm.name || !recurringForm.amount) return;
     setRecurring(prev => [...prev, { id: Date.now().toString(), name: recurringForm.name, amount: Number(recurringForm.amount), day: Number(recurringForm.day), category: recurringForm.category }]);
     setRecurringForm({ name: '', amount: '', day: '1', category: 'utilities' });
-    setToast({ message: 'Recurring expense added!' }); setTimeout(() => setToast(null), 3000);
+    setToast({ message: 'Recurring expense added!' }); 
+    setTimeout(() => setToast(null), 3000);
   };
 
   const handlePlannedSubmit = (e) => {
@@ -408,7 +424,8 @@ export default function App() {
     if (!plannedForm.name || !plannedForm.amount) return;
     setPlanned(prev => [...prev, { id: Date.now().toString(), name: plannedForm.name, amount: Number(plannedForm.amount), date: plannedForm.date, category: plannedForm.category }]);
     setPlannedForm({ name: '', amount: '', date: '2026-09-15', category: 'other_expense' });
-    setToast({ message: 'Planned expense added!' }); setTimeout(() => setToast(null), 3000);
+    setToast({ message: 'Planned expense added!' }); 
+    setTimeout(() => setToast(null), 3000);
   };
 
   const handleGoalSubmit = (e) => {
@@ -416,7 +433,8 @@ export default function App() {
     if (!goalForm.name || !goalForm.target) return;
     setGoals(prev => [...prev, { id: Date.now().toString(), name: goalForm.name, target: Number(goalForm.target), current: Number(goalForm.current || 0) }]);
     setGoalForm({ name: '', target: '', current: '' });
-    setToast({ message: 'Savings goal added!' }); setTimeout(() => setToast(null), 3000);
+    setToast({ message: 'Savings goal added!' }); 
+    setTimeout(() => setToast(null), 3000);
   };
 
   const handleLoanSubmit = (e) => {
@@ -437,26 +455,35 @@ export default function App() {
     const data = { transactions, loans, goals, categoryTargets, recurring, planned };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `clarity-backup-2026-09-02.json`; a.click();
-    setToast({ message: 'Backup successfully downloaded!' }); setTimeout(() => setToast(null), 3000);
+    const a = document.createElement('a'); 
+    a.href = url; 
+    a.download = `clarity-backup-2026-09-02.json`; 
+    a.click();
+    setToast({ message: 'Backup successfully downloaded!' }); 
+    setTimeout(() => setToast(null), 3000);
   };
 
   const handleImport = (e) => {
-    const file = e.target.files[0]; if (!file) return;
+    const file = e.target.files[0]; 
+    if (!file) return;
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
         const data = JSON.parse(event.target.result);
         if (data.transactions) setTransactions(data.transactions);
         setToast({ message: 'Data completely restored!' });
-      } catch { setToast({ message: 'Invalid backup file!' }); }
+      } catch { 
+        setToast({ message: 'Invalid backup file!' }); 
+      }
       setTimeout(() => setToast(null), 4000);
     };
     reader.readAsText(file);
   };
 
   const handlePrint = () => {
-    try { window.print(); } catch {
+    try { 
+      window.print(); 
+    } catch {
       setToast({ message: 'Printing blocked by browser. Press Ctrl+P or Cmd+P.' });
       setTimeout(() => setToast(null), 4000);
     }
@@ -467,7 +494,8 @@ export default function App() {
       setShowApiKeyModal(true);
       return;
     }
-    const file = e.target.files[0]; if (!file) return;
+    const file = e.target.files[0]; 
+    if (!file) return;
     setIsScanning(true);
     const reader = new FileReader();
     reader.onload = async (event) => {
@@ -488,8 +516,13 @@ export default function App() {
           setFormData(prev => ({ ...prev, type: 'expense', amount: parsed.amount || '', category: parsed.category || 'other_expense', date: parsed.date || prev.date, note: parsed.note || '' }));
           setToast({ message: 'Receipt scanned! Please confirm details below.' });
         }
-      } catch { setToast({ message: 'Failed to scan receipt. Please check your API Key.' }); } 
-      finally { setIsScanning(false); if (fileInputRef.current) fileInputRef.current.value = ''; setTimeout(() => setToast(null), 4000); }
+      } catch { 
+        setToast({ message: 'Failed to scan receipt. Please check your API Key.' }); 
+      } finally { 
+        setIsScanning(false); 
+        if (fileInputRef.current) fileInputRef.current.value = ''; 
+        setTimeout(() => setToast(null), 4000); 
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -541,7 +574,7 @@ export default function App() {
   const CurrencyIcon = CURRENCIES.find(c => c.code === currency)?.icon || DollarSign;
 
   return (
-    <div className={`${isDarkMode ? 'dark' : ''}`}>
+    <div className={isDarkMode ? 'dark' : ''}>
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans transition-colors duration-300 selection:bg-indigo-100 dark:selection:bg-indigo-900/50 selection:text-indigo-900 dark:selection:text-indigo-100 print-container">
         <style>{globalStyles}</style>
 
@@ -553,7 +586,7 @@ export default function App() {
         )}
 
         {/* Top Navbar */}
-        <nav className="bg-white/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10 shadow-sm backdrop-blur-md transition-colors duration-300 no-print">
+        <nav className="bg-white/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 shadow-sm backdrop-blur-md transition-colors duration-300 no-print">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
               <Activity className="w-6 h-6 shrink-0" />
@@ -641,16 +674,19 @@ export default function App() {
 
           {activeTab === 'dashboard' && (
             <>
-              {/* Top Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 animate-fade-in-up print-break-inside-avoid">
+              {}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 animate-fade-in-up print-break-inside-avoid relative z-20">
                 <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-6 text-white shadow-lg relative overflow-hidden">
                   <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
                   <div className="relative z-10 flex flex-col justify-between h-full">
-                    <div><div className="flex items-center gap-2 text-indigo-100 mb-2"><Wallet className="w-5 h-5" /><h2 className="font-medium">Monthly Savings</h2></div>
-                    <p className="text-4xl font-bold">{formatMoney(currentMonthData.savings)}</p></div>
+                    <div>
+                      <div className="flex items-center gap-2 text-indigo-100 mb-2"><Wallet className="w-5 h-5" /><h2 className="font-medium">Monthly Savings</h2></div>
+                      <p className="text-4xl font-bold">{formatMoney(currentMonthData.savings)}</p>
+                    </div>
                     <div className="mt-4 pt-4 border-t border-white/20 flex gap-2 text-sm text-indigo-100"><History className="w-4 h-4" /><span>Vs Last: {savingsDifference >= 0 ? '+' : ''}{formatMoney(savingsDifference)}</span></div>
                   </div>
                 </div>
+
                 <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col justify-between">
                   <div>
                     <div className="flex items-center gap-2 text-slate-500 mb-2"><TrendingUp className="w-5 h-5 text-emerald-500" /><h2>Monthly Income</h2></div>
@@ -658,6 +694,7 @@ export default function App() {
                   </div>
                   {highestSavingsMonth && <p className="text-xs text-slate-400 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">Best Month: {highestSavingsMonth.month} ({formatMoney(highestSavingsMonth.savings)})</p>}
                 </div>
+
                 <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm relative flex flex-col justify-between">
                   <button onClick={() => setShowBudgetSettings(!showBudgetSettings)} className="absolute top-6 right-6 p-1 text-slate-400 hover:text-indigo-500 bg-slate-50 dark:bg-slate-700 rounded-md transition-colors"><Settings className="w-4 h-4" /></button>
                   <div>
@@ -667,25 +704,39 @@ export default function App() {
                   <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
                     <div className="flex justify-between text-xs mb-1"><span>Target</span><span>{formatMoney(monthlyTarget)}</span></div>
                     <div className="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full ${currentMonthData.expense > monthlyTarget ? 'bg-rose-500' : 'bg-indigo-500'}`} style={{ width: `${Math.min((currentMonthData.expense / monthlyTarget) * 100, 100)}%` }}></div>
+                      <div className={`h-full rounded-full ${currentMonthData.expense > monthlyTarget ? 'bg-rose-500' : 'bg-indigo-500'}`} style={{ width: `${Math.min((currentMonthData.expense / (monthlyTarget || 1)) * 100, 100)}%` }}></div>
                     </div>
                   </div>
                 </div>
-                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-6 text-white shadow-lg flex flex-col justify-between group relative">
+
+                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-6 text-white shadow-lg flex flex-col justify-between group relative hover:z-30">
                   <div>
-                    <div className="flex items-center justify-between mb-2"><div className="flex items-center gap-2 text-indigo-400"><Activity className="w-5 h-5" /><h2>Health Score</h2></div><span className="text-2xl font-bold">{financialHealth.score}/100</span></div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2 text-indigo-400"><Activity className="w-5 h-5" /><h2>Health Score</h2></div>
+                      <span className="text-2xl font-bold">{financialHealth.score}/100</span>
+                    </div>
                     <p className="text-xs text-slate-300 mt-2 leading-relaxed">{financialHealth.message}</p>
                   </div>
-                  <div className="absolute bottom-full left-0 mb-2 w-full p-3 bg-slate-900 border border-slate-700 text-white text-xs rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none shadow-xl z-50 translate-y-2 group-hover:translate-y-0">
+
+                  {/* Downward overlay breakdown popover */}
+                  <div className="absolute top-full left-0 mt-3 w-full p-4 bg-slate-900/95 backdrop-blur-md border border-slate-700 text-white text-xs rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none shadow-2xl z-50 -translate-y-2 group-hover:translate-y-0">
                     <p className="font-bold mb-2 text-indigo-400 border-b border-slate-700 pb-1">Score Breakdown:</p>
-                    <ul className="space-y-1">{financialHealth.breakdown.map((item, idx) => <li key={idx} className="flex items-center gap-1.5"><CheckCircle className="w-3 h-3 text-emerald-400 shrink-0"/> {item}</li>)}</ul>
+                    <ul className="space-y-1">
+                      {financialHealth.breakdown.map((item, idx) => (
+                        <li key={idx} className="flex items-center gap-1.5">
+                          <CheckCircle className="w-3 h-3 text-emerald-400 shrink-0"/> {item}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
+
                   <p className="text-xs text-slate-400 mt-4 pt-4 border-t border-white/10 flex justify-between">Daily Spend: <span className="text-orange-400 font-bold">{formatMoney(dailyAverage)}</span></p>
                 </div>
               </div>
 
+              {}
               {showBudgetSettings && (
-                <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-3xl p-6 border border-indigo-100 dark:border-indigo-800">
+                <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-3xl p-6 border border-indigo-100 dark:border-indigo-800 relative z-10">
                   <h3 className="text-lg font-semibold mb-4 text-indigo-900 dark:text-indigo-300">Set Monthly Budget Targets</h3>
                   <div className="flex flex-wrap gap-4">
                     <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm">
@@ -702,8 +753,8 @@ export default function App() {
                 </div>
               )}
 
-              {/* Minimized Analytics Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in-up stagger-1">
+              {}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in-up stagger-1 relative z-0">
                 <div onClick={() => setIsHeatmapOpen(true)} className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col justify-center items-center cursor-pointer group hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-700 transition-all duration-300 min-h-[200px]">
                   <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300"><Calendar className="w-8 h-8 text-indigo-500" /></div>
                   <h3 className="text-lg font-bold text-slate-800 dark:text-white">Daily Heatmap</h3>
@@ -720,20 +771,27 @@ export default function App() {
                   <div>
                     <h3 className="text-lg font-semibold flex items-center gap-2 mb-4"><Flame className="w-5 h-5 text-orange-500" /> Streaks & Habits</h3>
                     <div className="space-y-3">
-                      <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm"><span className="text-sm font-medium">No-Spend Streak</span><span className="font-bold text-orange-500 flex items-center gap-1"><Flame className="w-4 h-4 fill-current" /> {noSpendStreak} Days</span></div>
-                      <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm"><span className="text-sm font-medium">Days Remaining</span><span className="font-bold">{new Date(parseInt(selectedMonth.split('-')[0]), parseInt(selectedMonth.split('-')[1]), 0).getDate() - parseInt(new Date().toISOString().split('T')[0].split('-')[2]) > 0 ? new Date(parseInt(selectedMonth.split('-')[0]), parseInt(selectedMonth.split('-')[1]), 0).getDate() - parseInt(new Date().toISOString().split('T')[0].split('-')[2]) : 0} Days</span></div>
+                      <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm">
+                        <span className="text-sm font-medium">No-Spend Streak</span>
+                        <span className="font-bold text-orange-500 flex items-center gap-1"><Flame className="w-4 h-4 fill-current" /> {noSpendStreak} Days</span>
+                      </div>
+                      <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm">
+                        <span className="text-sm font-medium">Days Remaining</span>
+                        <span className="font-bold">{new Date(parseInt(selectedMonth.split('-')[0]), parseInt(selectedMonth.split('-')[1]), 0).getDate() - parseInt(new Date().toISOString().split('T')[0].split('-')[2]) > 0 ? new Date(parseInt(selectedMonth.split('-')[0]), parseInt(selectedMonth.split('-')[1]), 0).getDate() - parseInt(new Date().toISOString().split('T')[0].split('-')[2]) : 0} Days</span>
+                      </div>
                     </div>
                   </div>
                   {frequentCategory && <div className="mt-4 p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl text-xs font-medium text-indigo-800 dark:text-indigo-300">💡 You've purchased items under <strong>{frequentCategory.label}</strong> {frequentCategory.count} times this month.</div>}
                 </div>
               </div>
 
+              {}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
                 
                 {/* Left Form Column */}
                 <div className="lg:col-span-1 space-y-6">
                   <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 rounded-3xl p-6 border border-indigo-100 shadow-sm">
-                    <h3 className="text-lg font-semibold mb-2 flex items-center gap-2 text-indigo-900 dark:text-indigo-300"><Sparkles className="w-5 h-5 text-indigo-500" /> ✨ Magic Add & OCR</h3>
+                    <h3 className="text-lg font-semibold mb-2 flex items-center gap-2 text-indigo-900 dark:text-indigo-300"><Sparkles className="w-5 h-5 text-indigo-500" /> Magic Add & OCR</h3>
                     <div className="flex gap-2 mt-4">
                       <input type="text" value={magicPrompt} onChange={(e) => setMagicPrompt(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleMagicAdd()} placeholder="e.g. 240 snacks..." className="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border rounded-xl text-sm dark:text-white" />
                       <button onClick={handleMagicAdd} disabled={isMagicLoading} className="px-3 py-2 bg-indigo-600 text-white rounded-xl shadow disabled:opacity-70">{isMagicLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}</button>
@@ -769,7 +827,7 @@ export default function App() {
 
                       <div className="grid grid-cols-2 gap-3">
                         <div><label className="block text-xs font-medium text-slate-500 mb-1">Date</label><input type="date" name="date" value={formData.date} onChange={handleInputChange} required className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border rounded-xl dark:text-white text-sm" /></div>
-                        <div><label className="block text-xs font-medium text-slate-500 mb-1">Note</label><input type="text" name="note" value={formData.note} onChange={handleInputChange} placeholder="e.g. Coke" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border rounded-xl dark:text-white text-sm" /></div>
+                        <div><label className="block text-xs font-medium text-slate-500 mb-1">Note</label><input type="text" name="note" value={formData.note} onChange={handleInputChange} placeholder="e.g. Coffee" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border rounded-xl dark:text-white text-sm" /></div>
                       </div>
 
                       {formData.type === 'expense' && !editingId && (
@@ -804,7 +862,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Right Transaction List Column */}
+                {}
                 <div className="lg:col-span-2">
                   <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm min-h-[600px] flex flex-col">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
@@ -857,6 +915,7 @@ export default function App() {
             </>
           )}
 
+          {}
           {activeTab === 'forecast' && (
             <div className="animate-fade-in-up space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -951,6 +1010,7 @@ export default function App() {
             </div>
           )}
 
+          {}
           {activeTab === 'goals' && (
             <div className="animate-fade-in-up space-y-6">
                <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border shadow-sm">
@@ -978,23 +1038,23 @@ export default function App() {
 
         </main>
 
-        {/* API Key Modal */}
+        {}
         {showApiKeyModal && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[80] flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md p-8 relative shadow-2xl animate-fade-in-up">
               <button onClick={() => setShowApiKeyModal(false)} className="absolute top-6 right-6 p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200"><X className="w-5 h-5" /></button>
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl text-indigo-600"><Key className="w-6 h-6" /></div>
-                <div><h2 className="text-xl font-bold">Gemini API Key</h2><p className="text-xs text-slate-500">Required for Receipt Scanning & Magic Add</p></div>
+                <div><h2 className="text-xl font-bold">API Key</h2><p className="text-xs text-slate-500">Required for Receipt Scanning & Magic Add</p></div>
               </div>
-              <p className="text-sm text-slate-600 dark:text-slate-300 mb-6">Your API key is saved strictly in your browser's local storage and is never sent anywhere else. You can get a free key from Google AI Studio.</p>
-              <input type="password" value={tempApiKey} onChange={e => setTempApiKey(e.target.value)} placeholder="Paste your API key here..." className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border rounded-xl text-sm mb-6 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500" />
+              <p className="text-sm text-slate-600 dark:text-slate-300 mb-6">Your API key is saved strictly in your browser's local storage and is never sent anywhere else.</p>
+              <input type="password" value={tempApiKey} onChange={e => setTempApiKey(e.target.value)} placeholder="Use your API key..." className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border rounded-xl text-sm mb-6 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500" />
               <button onClick={saveApiKey} className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-md">Save API Key</button>
             </div>
           </div>
         )}
 
-        {/* Heatmap Modal */}
+        {}
         {isHeatmapOpen && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4" onClick={(e) => e.target === e.currentTarget && setIsHeatmapOpen(false)}>
             <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-3xl p-8 relative shadow-2xl animate-fade-in-up max-h-[95vh] overflow-y-auto">
@@ -1026,7 +1086,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Trend Modal */}
         {isTrendOpen && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4" onClick={(e) => e.target === e.currentTarget && setIsTrendOpen(false)}>
             <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-4xl p-8 relative shadow-2xl animate-fade-in-up">
@@ -1056,7 +1115,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Report Modal */}
+        {}
         {showReport && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-2xl p-8 relative shadow-2xl animate-fade-in-up">
@@ -1064,14 +1123,14 @@ export default function App() {
               <h2 className="text-2xl font-bold mb-2 flex items-center gap-3"><FileText className="w-7 h-7 text-indigo-500" /> Executive Summary</h2>
               
               {isReportLoading ? (
-                <div className="flex flex-col items-center justify-center py-12"><Loader2 className="w-12 h-12 text-indigo-500 animate-spin mb-4" /><p>Gemini AI is analyzing your data...</p></div>
+                <div className="flex flex-col items-center justify-center py-12"><Loader2 className="w-12 h-12 text-indigo-500 animate-spin mb-4" /><p>AI is analyzing your data...</p></div>
               ) : (
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border">
                     <div><span className="text-sm text-slate-500">Income</span><p className="text-xl font-bold text-emerald-500">{formatMoney(currentMonthData.income)}</p></div>
                     <div><span className="text-sm text-slate-500">Expense</span><p className="text-xl font-bold text-rose-500">{formatMoney(currentMonthData.expense)}</p></div>
                     <div><span className="text-sm text-slate-500">Saved</span><p className="text-xl font-bold text-indigo-500">{formatMoney(currentMonthData.savings)}</p></div>
-                    <div><span className="text-sm text-slate-500">Savings Rate</span><p className="text-xl font-bold">{currentMonthData.income ? ((currentMonthData.savings/currentMonthData.income)*100).getKey?.() || ((currentMonthData.savings/currentMonthData.income)*100).toFixed(1) : 0}%</p></div>
+                    <div><span className="text-sm text-slate-500">Savings Rate</span><p className="text-xl font-bold">{currentMonthData.income ? ((currentMonthData.savings/currentMonthData.income)*100).toFixed(1) : 0}%</p></div>
                   </div>
                   
                   <div className="p-6 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100">
