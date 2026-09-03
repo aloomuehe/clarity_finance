@@ -1,3 +1,4 @@
+
 :root {
   --text: #6b6375;
   --text-h: #08060d;
@@ -108,4 +109,16 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #9ca3af;
+    --text-h: #f3f4f6;   /* <-- Light grey / near-white text */
+    --bg: #16171d;
+  }
+}
+
+h1, h2 {
+  color: var(--text-h);  /* <-- Forces all headings to use that near-white text! */
 }
