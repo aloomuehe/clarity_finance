@@ -35,22 +35,11 @@ const globalStyles = `
   .anim-income { animation: incomeFloatUp 1.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
   .anim-expense { animation: expenseDropDown 1.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
 
-  /* ---------------------------------------------------------------
-     THEME ENGINE
-     The theme is driven ONLY by the .dark class on <html>.
-     Tailwind's built-in "dark:" variant is intentionally NOT used,
-     because in a default Tailwind setup it reacts to the OS setting
-     (prefers-color-scheme) instead of the in-app toggle. That is what
-     caused light text to survive in Day mode on a dark OS.
-     Every dark value now lives here as a plain "dk-*" class.
-     --------------------------------------------------------------- */
-
   html { color-scheme: light; }
   html.dark { color-scheme: dark; }
   body { background-color: #f8fafc; color: #0f172a; }
   html.dark body { background-color: #0f172a; color: #f1f5f9; }
 
-  /* Backgrounds */
   html.dark .dk-bg-slate-700 { background-color: #334155; }
   html.dark .dk-bg-slate-800 { background-color: #1e293b; }
   html.dark .dk-bg-slate-800-50 { background-color: rgba(30, 41, 59, 0.5); }
@@ -68,7 +57,6 @@ const globalStyles = `
   html.dark .dk-bg-orange-500 { background-color: #f97316; }
   html.dark .dk-bg-yellow-500 { background-color: #eab308; }
 
-  /* Borders */
   html.dark .dk-border-slate-600 { border-color: #475569; }
   html.dark .dk-border-slate-700 { border-color: #334155; }
   html.dark .dk-border-slate-700-50 { border-color: rgba(51, 65, 85, 0.6); }
@@ -77,7 +65,6 @@ const globalStyles = `
   html.dark .dk-border-indigo-800-50 { border-color: rgba(55, 48, 163, 0.5); }
   html.dark .dk-border-orange-800-30 { border-color: rgba(154, 52, 18, 0.4); }
 
-  /* Text */
   html.dark .dk-text-white { color: #ffffff; }
   html.dark .dk-text-slate-100 { color: #f1f5f9; }
   html.dark .dk-text-slate-200 { color: #e2e8f0; }
@@ -90,7 +77,6 @@ const globalStyles = `
   html.dark .dk-text-emerald-300 { color: #6ee7b7; }
   html.dark .dk-text-rose-300 { color: #fda4af; }
 
-  /* Interactive states */
   html.dark .dk-hover-bg-slate-700:hover { background-color: #334155; }
   html.dark .dk-hover-bg-slate-800:hover { background-color: #1e293b; }
   html.dark .dk-hover-bg-indigo-900-30:hover { background-color: rgba(49, 46, 129, 0.35); }
@@ -99,13 +85,11 @@ const globalStyles = `
   html.dark .dk-hover-border-emerald-700:hover { border-color: #047857; }
   html.dark .dk-hover-text-slate-200:hover { color: #e2e8f0; }
 
-  /* Selection */
   html.dark .dk-selection-bg-indigo-900-50::selection,
   html.dark .dk-selection-bg-indigo-900-50 *::selection { background-color: rgba(49, 46, 129, 0.6); }
   html.dark .dk-selection-text-indigo-100::selection,
   html.dark .dk-selection-text-indigo-100 *::selection { color: #e0e7ff; }
 
-  /* Gradient panels */
   html.dark .dk-from-indigo-900-20 {
     background-image: linear-gradient(to bottom right, rgba(49, 46, 129, 0.45), rgba(88, 28, 135, 0.28));
   }
@@ -113,7 +97,6 @@ const globalStyles = `
     background-image: linear-gradient(to bottom right, rgba(124, 45, 18, 0.35), rgba(120, 53, 15, 0.22));
   }
 
-  /* Form controls: keep native widgets in sync with the app theme */
   input, select, textarea { color-scheme: inherit; }
   ::placeholder { color: #94a3b8; opacity: 1; }
   html.dark ::placeholder { color: #64748b; opacity: 1; }
@@ -181,8 +164,6 @@ const getMonthString = (date) => {
   return Number.isNaN(parsedDate.getTime()) ? '' : parsedDate.toISOString().slice(0, 7);
 };
 
-// Applies the theme to <html>. Called both on first paint and on every toggle,
-// so the OS colour scheme can never override the user's in-app choice.
 const applyTheme = (dark) => {
   const root = document.documentElement;
   root.classList.toggle('dark', dark);
@@ -684,14 +665,12 @@ export default function App() {
     <div className="theme-container min-h-screen bg-slate-50 dk-bg-slate-900 text-slate-900 dk-text-slate-100 font-sans transition-colors duration-300 selection:bg-indigo-100 dk-selection-bg-indigo-900-50 selection:text-indigo-900 dk-selection-text-indigo-100 print-container">
       <style>{globalStyles}</style>
 
-      {/* Global Floating Transaction Animation */}
       {transactionAnimation && (
         <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50 flex items-center gap-3 text-5xl font-black drop-shadow-2xl no-print ${transactionAnimation.type === 'income' ? 'anim-income text-emerald-500' : 'anim-expense text-rose-500'}`}>
           {transactionAnimation.type === 'income' ? '🤑' : '💸'} {transactionAnimation.type === 'income' ? '+' : '-'}{formatMoney(transactionAnimation.amount)}
         </div>
       )}
 
-      {/* Top Navbar */}
       <nav className="bg-white/90 dk-bg-slate-900-80 border-b border-slate-200 dk-border-slate-800 sticky top-0 z-40 shadow-sm backdrop-blur-md transition-colors duration-300 no-print">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 text-indigo-600 dk-text-indigo-400">
@@ -708,7 +687,6 @@ export default function App() {
           
           <div className="flex items-center gap-2 sm:gap-4 text-sm font-medium text-slate-600 dk-text-slate-300">
             
-            {/* Custom Smooth Calendar Dropdown */}
             <div className="relative">
               <button 
                 onClick={() => { setIsCalendarOpen(!isCalendarOpen); setCalendarYear(parseInt(selectedMonth.split('-')[0], 10)); }} 
@@ -749,7 +727,6 @@ export default function App() {
               )}
             </div>
 
-            {/* Currency Selector */}
             <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="bg-slate-100 hover:bg-slate-200 dk-bg-slate-800 dk-hover-bg-slate-700 border-none rounded-xl px-3 py-2 text-sm font-bold text-slate-800 dk-text-slate-200 transition-all duration-300 ease-in-out cursor-pointer outline-none hover:shadow-sm focus:ring-2 focus:ring-indigo-500/50">
               {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
             </select>
@@ -767,7 +744,6 @@ export default function App() {
         
         <div className="hidden print-only mb-8 border-b pb-4"><h1 className="text-3xl font-bold text-black">Financial Report</h1><p className="text-lg text-gray-600">Month: {new Date(selectedMonth + '-01').toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</p></div>
 
-        {/* Smart Alerts */}
         {warnings.length > 0 && activeTab === 'dashboard' && (
           <div className="animate-fade-in-up space-y-2 no-print">
             {warnings.map((warn, i) => (
@@ -824,7 +800,6 @@ export default function App() {
                   <p className="text-xs text-slate-200 mt-2 leading-relaxed">{financialHealth.message}</p>
                 </div>
 
-                {/* Stacking popover hovering downward over Streaks & Habits */}
                 <div className="absolute top-full left-0 mt-3 w-full p-4 bg-slate-900/95 backdrop-blur-md border border-slate-700 text-white text-xs rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none shadow-2xl z-50 -translate-y-2 group-hover:translate-y-0">
                   <p className="font-bold mb-2 text-indigo-400 border-b border-slate-700 pb-1">Score Breakdown:</p>
                   <ul className="space-y-1">
@@ -1274,7 +1249,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Global Toast */}
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[80] bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-4 text-sm font-semibold animate-fade-in-up border border-slate-700">
           <span>{toast.message}</span>
