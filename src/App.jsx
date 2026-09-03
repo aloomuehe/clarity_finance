@@ -35,23 +35,101 @@ const globalStyles = `
   .anim-income { animation: incomeFloatUp 1.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
   .anim-expense { animation: expenseDropDown 1.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
 
-  /* Fallback Day Mode Overrides to neutralize system dark mode leaks */
-  html:not(.dark) .theme-container {
-    background-color: #f8fafc !important;
-    color: #0f172a !important;
+  /* ---------------------------------------------------------------
+     THEME ENGINE
+     The theme is driven ONLY by the .dark class on <html>.
+     Tailwind's built-in "dark:" variant is intentionally NOT used,
+     because in a default Tailwind setup it reacts to the OS setting
+     (prefers-color-scheme) instead of the in-app toggle. That is what
+     caused light text to survive in Day mode on a dark OS.
+     Every dark value now lives here as a plain "dk-*" class.
+     --------------------------------------------------------------- */
+
+  html { color-scheme: light; }
+  html.dark { color-scheme: dark; }
+  body { background-color: #f8fafc; color: #0f172a; }
+  html.dark body { background-color: #0f172a; color: #f1f5f9; }
+
+  /* Backgrounds */
+  html.dark .dk-bg-slate-700 { background-color: #334155; }
+  html.dark .dk-bg-slate-800 { background-color: #1e293b; }
+  html.dark .dk-bg-slate-800-50 { background-color: rgba(30, 41, 59, 0.5); }
+  html.dark .dk-bg-slate-900 { background-color: #0f172a; }
+  html.dark .dk-bg-slate-900-50 { background-color: rgba(15, 23, 42, 0.5); }
+  html.dark .dk-bg-slate-900-80 { background-color: rgba(15, 23, 42, 0.85); }
+  html.dark .dk-bg-indigo-900-20 { background-color: rgba(49, 46, 129, 0.2); }
+  html.dark .dk-bg-indigo-900-30 { background-color: rgba(49, 46, 129, 0.3); }
+  html.dark .dk-bg-indigo-900-40 { background-color: rgba(49, 46, 129, 0.4); }
+  html.dark .dk-bg-emerald-500 { background-color: #10b981; }
+  html.dark .dk-bg-emerald-900-30 { background-color: rgba(6, 78, 59, 0.3); }
+  html.dark .dk-bg-rose-600 { background-color: #e11d48; }
+  html.dark .dk-bg-rose-900-20 { background-color: rgba(136, 19, 55, 0.25); }
+  html.dark .dk-bg-amber-900-20 { background-color: rgba(120, 53, 15, 0.25); }
+  html.dark .dk-bg-orange-500 { background-color: #f97316; }
+  html.dark .dk-bg-yellow-500 { background-color: #eab308; }
+
+  /* Borders */
+  html.dark .dk-border-slate-600 { border-color: #475569; }
+  html.dark .dk-border-slate-700 { border-color: #334155; }
+  html.dark .dk-border-slate-700-50 { border-color: rgba(51, 65, 85, 0.6); }
+  html.dark .dk-border-slate-800 { border-color: #1e293b; }
+  html.dark .dk-border-indigo-800 { border-color: #3730a3; }
+  html.dark .dk-border-indigo-800-50 { border-color: rgba(55, 48, 163, 0.5); }
+  html.dark .dk-border-orange-800-30 { border-color: rgba(154, 52, 18, 0.4); }
+
+  /* Text */
+  html.dark .dk-text-white { color: #ffffff; }
+  html.dark .dk-text-slate-100 { color: #f1f5f9; }
+  html.dark .dk-text-slate-200 { color: #e2e8f0; }
+  html.dark .dk-text-slate-300 { color: #cbd5e1; }
+  html.dark .dk-text-slate-400 { color: #94a3b8; }
+  html.dark .dk-text-indigo-200 { color: #c7d2fe; }
+  html.dark .dk-text-indigo-300 { color: #a5b4fc; }
+  html.dark .dk-text-indigo-400 { color: #818cf8; }
+  html.dark .dk-text-amber-300 { color: #fcd34d; }
+  html.dark .dk-text-emerald-300 { color: #6ee7b7; }
+  html.dark .dk-text-rose-300 { color: #fda4af; }
+
+  /* Interactive states */
+  html.dark .dk-hover-bg-slate-700:hover { background-color: #334155; }
+  html.dark .dk-hover-bg-slate-800:hover { background-color: #1e293b; }
+  html.dark .dk-hover-bg-indigo-900-30:hover { background-color: rgba(49, 46, 129, 0.35); }
+  html.dark .dk-hover-border-slate-600:hover { border-color: #475569; }
+  html.dark .dk-hover-border-indigo-700:hover { border-color: #4338ca; }
+  html.dark .dk-hover-border-emerald-700:hover { border-color: #047857; }
+  html.dark .dk-hover-text-slate-200:hover { color: #e2e8f0; }
+
+  /* Selection */
+  html.dark .dk-selection-bg-indigo-900-50::selection,
+  html.dark .dk-selection-bg-indigo-900-50 *::selection { background-color: rgba(49, 46, 129, 0.6); }
+  html.dark .dk-selection-text-indigo-100::selection,
+  html.dark .dk-selection-text-indigo-100 *::selection { color: #e0e7ff; }
+
+  /* Gradient panels */
+  html.dark .dk-from-indigo-900-20 {
+    background-image: linear-gradient(to bottom right, rgba(49, 46, 129, 0.45), rgba(88, 28, 135, 0.28));
   }
-  html:not(.dark) .dark-card {
-    background-color: #ffffff !important;
-    border-color: #e2e8f0 !important;
-    color: #0f172a !important;
+  html.dark .dk-from-orange-900-10 {
+    background-image: linear-gradient(to bottom right, rgba(124, 45, 18, 0.35), rgba(120, 53, 15, 0.22));
   }
 
-  ::-webkit-scrollbar { width: 6px; }
+  /* Form controls: keep native widgets in sync with the app theme */
+  input, select, textarea { color-scheme: inherit; }
+  ::placeholder { color: #94a3b8; opacity: 1; }
+  html.dark ::placeholder { color: #64748b; opacity: 1; }
+  html.dark option { background-color: #0f172a; color: #e2e8f0; }
+  html.dark input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.7); }
+  input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible {
+    outline: 2px solid #6366f1;
+    outline-offset: 2px;
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
   ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-  .dark ::-webkit-scrollbar-thumb { background: #475569; }
-  .dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+  html.dark ::-webkit-scrollbar-thumb { background: #475569; }
+  html.dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
   @media print {
     body { background: white !important; color: black !important; }
@@ -103,10 +181,22 @@ const getMonthString = (date) => {
   return Number.isNaN(parsedDate.getTime()) ? '' : parsedDate.toISOString().slice(0, 7);
 };
 
+// Applies the theme to <html>. Called both on first paint and on every toggle,
+// so the OS colour scheme can never override the user's in-app choice.
+const applyTheme = (dark) => {
+  const root = document.documentElement;
+  root.classList.toggle('dark', dark);
+  root.style.colorScheme = dark ? 'dark' : 'light';
+};
+
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('clarity_theme');
-    return saved !== null ? saved === 'dark' : false;
+    const dark = saved !== null
+      ? saved === 'dark'
+      : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    applyTheme(dark);
+    return dark;
   });
 
   const [transactionAnimation, setTransactionAnimation] = useState(null);
@@ -163,12 +253,7 @@ export default function App() {
   const [heatmapThresholds, setHeatmapThresholds] = useState({ green: 50, yellow: 150, orange: 300 });
 
   useEffect(() => {
-    const root = document.documentElement;
-    if (isDarkMode) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
+    applyTheme(isDarkMode);
     localStorage.setItem('clarity_theme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
 
@@ -360,11 +445,11 @@ export default function App() {
   }, [transactions, selectedMonth]);
 
   const getHeatmapColor = (spent) => {
-     if (spent === 0) return 'bg-slate-100 dark:bg-slate-800/50';
-     if (spent <= heatmapThresholds.green) return 'bg-emerald-400 dark:bg-emerald-500';
-     if (spent <= heatmapThresholds.yellow) return 'bg-yellow-400 dark:bg-yellow-500';
-     if (spent <= heatmapThresholds.orange) return 'bg-orange-400 dark:bg-orange-500';
-     return 'bg-rose-500 dark:bg-rose-600';
+     if (spent === 0) return 'bg-slate-100 dk-bg-slate-800-50';
+     if (spent <= heatmapThresholds.green) return 'bg-emerald-400 dk-bg-emerald-500';
+     if (spent <= heatmapThresholds.yellow) return 'bg-yellow-400 dk-bg-yellow-500';
+     if (spent <= heatmapThresholds.orange) return 'bg-orange-400 dk-bg-orange-500';
+     return 'bg-rose-500 dk-bg-rose-600';
   };
 
   const sixMonthTrend = useMemo(() => {
@@ -596,7 +681,7 @@ export default function App() {
   const CurrencyIcon = CURRENCIES.find(c => c.code === currency)?.icon || DollarSign;
 
   return (
-    <div className="theme-container min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 selection:bg-indigo-100 dark:selection:bg-indigo-900/50 selection:text-indigo-900 dark:selection:text-indigo-100 print-container">
+    <div className="theme-container min-h-screen bg-slate-50 dk-bg-slate-900 text-slate-900 dk-text-slate-100 font-sans transition-colors duration-300 selection:bg-indigo-100 dk-selection-bg-indigo-900-50 selection:text-indigo-900 dk-selection-text-indigo-100 print-container">
       <style>{globalStyles}</style>
 
       {/* Global Floating Transaction Animation */}
@@ -607,30 +692,30 @@ export default function App() {
       )}
 
       {/* Top Navbar */}
-      <nav className="bg-white/90 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 shadow-sm backdrop-blur-md transition-colors duration-300 no-print">
+      <nav className="bg-white/90 dk-bg-slate-900-80 border-b border-slate-200 dk-border-slate-800 sticky top-0 z-40 shadow-sm backdrop-blur-md transition-colors duration-300 no-print">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+          <div className="flex items-center gap-2 text-indigo-600 dk-text-indigo-400">
             <Activity className="w-6 h-6 shrink-0" />
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white hidden lg:block">Clarity Finance</h1>
+            <h1 className="text-xl font-bold tracking-tight text-slate-900 dk-text-white hidden lg:block">Clarity Finance</h1>
             
-            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl ml-2 lg:ml-6">
-              <button onClick={() => setActiveTab('dashboard')} className={`px-3 sm:px-4 py-1.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${activeTab === 'dashboard' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}>Dashboard</button>
-              <button onClick={() => setActiveTab('forecast')} className={`px-3 sm:px-4 py-1.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${activeTab === 'forecast' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}>Forecast</button>
-              <button onClick={() => setActiveTab('loans')} className={`px-3 sm:px-4 py-1.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${activeTab === 'loans' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}>Loans</button>
-              <button onClick={() => setActiveTab('goals')} className={`px-3 sm:px-4 py-1.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${activeTab === 'goals' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}>Goals</button>
+            <div className="flex bg-slate-100 dk-bg-slate-800 p-1 rounded-xl ml-2 lg:ml-6 overflow-x-auto max-w-full">
+              <button onClick={() => setActiveTab('dashboard')} className={`px-3 sm:px-4 py-1.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${activeTab === 'dashboard' ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-400 shadow-sm' : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-slate-200'}`}>Dashboard</button>
+              <button onClick={() => setActiveTab('forecast')} className={`px-3 sm:px-4 py-1.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${activeTab === 'forecast' ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-400 shadow-sm' : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-slate-200'}`}>Forecast</button>
+              <button onClick={() => setActiveTab('loans')} className={`px-3 sm:px-4 py-1.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${activeTab === 'loans' ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-400 shadow-sm' : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-slate-200'}`}>Loans</button>
+              <button onClick={() => setActiveTab('goals')} className={`px-3 sm:px-4 py-1.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${activeTab === 'goals' ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-400 shadow-sm' : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-slate-200'}`}>Goals</button>
             </div>
           </div>
           
-          <div className="flex items-center gap-2 sm:gap-4 text-sm font-medium text-slate-600 dark:text-slate-300">
+          <div className="flex items-center gap-2 sm:gap-4 text-sm font-medium text-slate-600 dk-text-slate-300">
             
             {/* Custom Smooth Calendar Dropdown */}
             <div className="relative">
               <button 
                 onClick={() => { setIsCalendarOpen(!isCalendarOpen); setCalendarYear(parseInt(selectedMonth.split('-')[0], 10)); }} 
-                className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-4 py-2 rounded-xl transition-all duration-300 ease-in-out cursor-pointer hover:shadow-sm"
+                className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 dk-bg-slate-800 dk-hover-bg-slate-700 px-4 py-2 rounded-xl transition-all duration-300 ease-in-out cursor-pointer hover:shadow-sm"
               >
                 <Calendar className="w-4 h-4 text-indigo-500" />
-                <span className="font-bold text-slate-800 dark:text-slate-200">
+                <span className="font-bold text-slate-800 dk-text-slate-200">
                   {new Date(selectedMonth + '-01').toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
                 </span>
               </button>
@@ -638,11 +723,11 @@ export default function App() {
               {isCalendarOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setIsCalendarOpen(false)}></div>
-                  <div className="absolute top-full right-0 sm:left-0 mt-2 p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 w-64 animate-fade-in-up origin-top-left">
-                    <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-200 dark:border-slate-700">
-                      <button onClick={() => setCalendarYear(y => y - 1)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-slate-700 dark:text-slate-200"><ChevronRight className="w-5 h-5 rotate-180" /></button>
-                      <span className="font-bold text-lg text-slate-900 dark:text-white">{calendarYear}</span>
-                      <button onClick={() => setCalendarYear(y => y + 1)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-slate-700 dark:text-slate-200"><ChevronRight className="w-5 h-5" /></button>
+                  <div className="absolute top-full right-0 sm:left-0 mt-2 p-4 bg-white dk-bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dk-border-slate-700 z-50 w-64 animate-fade-in-up origin-top-left">
+                    <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-200 dk-border-slate-700">
+                      <button onClick={() => setCalendarYear(y => y - 1)} className="p-1 hover:bg-slate-100 dk-hover-bg-slate-700 rounded-lg transition-colors text-slate-700 dk-text-slate-200"><ChevronRight className="w-5 h-5 rotate-180" /></button>
+                      <span className="font-bold text-lg text-slate-900 dk-text-white">{calendarYear}</span>
+                      <button onClick={() => setCalendarYear(y => y + 1)} className="p-1 hover:bg-slate-100 dk-hover-bg-slate-700 rounded-lg transition-colors text-slate-700 dk-text-slate-200"><ChevronRight className="w-5 h-5" /></button>
                     </div>
                     <div className="grid grid-cols-3 gap-2">
                       {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, i) => {
@@ -652,7 +737,7 @@ export default function App() {
                           <button 
                             key={m} 
                             onClick={() => { setSelectedMonth(monthStr); setIsCalendarOpen(false); }}
-                            className={`py-2 rounded-xl text-sm font-semibold transition-colors ${isSelected ? 'bg-indigo-600 text-white shadow-md' : 'hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-slate-700 dark:text-slate-300'}`}
+                            className={`py-2 rounded-xl text-sm font-semibold transition-colors ${isSelected ? 'bg-indigo-600 text-white shadow-md' : 'hover:bg-indigo-50 dk-hover-bg-indigo-900-30 text-slate-700 dk-text-slate-300'}`}
                           >
                             {m}
                           </button>
@@ -665,15 +750,15 @@ export default function App() {
             </div>
 
             {/* Currency Selector */}
-            <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border-none rounded-xl px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-200 transition-all duration-300 ease-in-out cursor-pointer outline-none hover:shadow-sm focus:ring-2 focus:ring-indigo-500/50">
+            <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="bg-slate-100 hover:bg-slate-200 dk-bg-slate-800 dk-hover-bg-slate-700 border-none rounded-xl px-3 py-2 text-sm font-bold text-slate-800 dk-text-slate-200 transition-all duration-300 ease-in-out cursor-pointer outline-none hover:shadow-sm focus:ring-2 focus:ring-indigo-500/50">
               {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
             </select>
 
-            <button onClick={() => { setTempApiKey(apiKey); setShowApiKeyModal(true); }} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-indigo-600 dark:text-indigo-400" title="API Key Settings"><Key className="w-5 h-5" /></button>
-            <button onClick={handleExport} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-700 dark:text-slate-300" title="Backup Data"><DownloadCloud className="w-5 h-5" /></button>
-            <label className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer text-slate-700 dark:text-slate-300" title="Restore Data"><Upload className="w-5 h-5" /><input type="file" accept=".json" onChange={handleImport} className="hidden" /></label>
-            <button onClick={handlePrint} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-700 dark:text-slate-300" title="Download Monthly PDF"><Download className="w-5 h-5" /></button>
-            <button onClick={toggleDarkMode} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-700 dark:text-slate-300" title="Toggle Theme">{isDarkMode ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-indigo-600" />}</button>
+            <button onClick={() => { setTempApiKey(apiKey); setShowApiKeyModal(true); }} className="p-2 rounded-full hover:bg-slate-100 dk-hover-bg-slate-800 transition-colors text-indigo-600 dk-text-indigo-400" title="API Key Settings"><Key className="w-5 h-5" /></button>
+            <button onClick={handleExport} className="p-2 rounded-full hover:bg-slate-100 dk-hover-bg-slate-800 transition-colors text-slate-700 dk-text-slate-300" title="Backup Data"><DownloadCloud className="w-5 h-5" /></button>
+            <label className="p-2 rounded-full hover:bg-slate-100 dk-hover-bg-slate-800 transition-colors cursor-pointer text-slate-700 dk-text-slate-300" title="Restore Data"><Upload className="w-5 h-5" /><input type="file" accept=".json" onChange={handleImport} className="hidden" /></label>
+            <button onClick={handlePrint} className="p-2 rounded-full hover:bg-slate-100 dk-hover-bg-slate-800 transition-colors text-slate-700 dk-text-slate-300" title="Download Monthly PDF"><Download className="w-5 h-5" /></button>
+            <button onClick={toggleDarkMode} className="p-2 rounded-full hover:bg-slate-100 dk-hover-bg-slate-800 transition-colors text-slate-700 dk-text-slate-300" title="Toggle Theme">{isDarkMode ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-indigo-600" />}</button>
           </div>
         </div>
       </nav>
@@ -686,7 +771,7 @@ export default function App() {
         {warnings.length > 0 && activeTab === 'dashboard' && (
           <div className="animate-fade-in-up space-y-2 no-print">
             {warnings.map((warn, i) => (
-              <div key={i} className={`flex items-center gap-3 border-l-4 p-4 rounded-r-xl shadow-sm ${warn.type === 'danger' ? 'bg-rose-50 border-rose-500 text-rose-900 dark:bg-rose-900/20 dark:text-rose-300' : 'bg-amber-50 border-amber-500 text-amber-900 dark:bg-amber-900/20 dark:text-amber-300'}`}>
+              <div key={i} className={`flex items-center gap-3 border-l-4 p-4 rounded-r-xl shadow-sm ${warn.type === 'danger' ? 'bg-rose-50 border-rose-500 text-rose-900 dk-bg-rose-900-20 dk-text-rose-300' : 'bg-amber-50 border-amber-500 text-amber-900 dk-bg-amber-900-20 dk-text-amber-300'}`}>
                 <span className="text-xl">{warn.icon}</span><p className="text-sm font-semibold">{warn.text}</p>
               </div>
             ))}
@@ -708,23 +793,23 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="dark-card bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
+              <div className="dark-card bg-white dk-bg-slate-800 rounded-3xl p-6 border border-slate-200 dk-border-slate-700 shadow-sm flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-2"><TrendingUp className="w-5 h-5 text-emerald-500" /><h2 className="font-semibold text-slate-700 dark:text-slate-300">Monthly Income</h2></div>
-                  <p className="text-3xl font-extrabold text-slate-900 dark:text-white">{formatMoney(currentMonthData.income)}</p>
+                  <div className="flex items-center gap-2 text-slate-500 dk-text-slate-400 mb-2"><TrendingUp className="w-5 h-5 text-emerald-500" /><h2 className="font-semibold text-slate-700 dk-text-slate-300">Monthly Income</h2></div>
+                  <p className="text-3xl font-extrabold text-slate-900 dk-text-white">{formatMoney(currentMonthData.income)}</p>
                 </div>
-                {highestSavingsMonth && <p className="text-xs text-slate-500 dark:text-slate-400 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 font-medium">Best Month: {highestSavingsMonth.month} ({formatMoney(highestSavingsMonth.savings)})</p>}
+                {highestSavingsMonth && <p className="text-xs text-slate-500 dk-text-slate-400 mt-4 pt-4 border-t border-slate-100 dk-border-slate-700 font-medium">Best Month: {highestSavingsMonth.month} ({formatMoney(highestSavingsMonth.savings)})</p>}
               </div>
 
-              <div className="dark-card bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm relative flex flex-col justify-between">
-                <button onClick={() => setShowBudgetSettings(!showBudgetSettings)} className="absolute top-6 right-6 p-1 text-slate-400 hover:text-indigo-500 bg-slate-50 dark:bg-slate-700 rounded-md transition-colors"><Settings className="w-4 h-4" /></button>
+              <div className="dark-card bg-white dk-bg-slate-800 rounded-3xl p-6 border border-slate-200 dk-border-slate-700 shadow-sm relative flex flex-col justify-between">
+                <button onClick={() => setShowBudgetSettings(!showBudgetSettings)} className="absolute top-6 right-6 p-1 text-slate-400 hover:text-indigo-500 bg-slate-50 dk-bg-slate-700 rounded-md transition-colors"><Settings className="w-4 h-4" /></button>
                 <div>
-                  <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-2"><TrendingDown className="w-5 h-5 text-rose-500" /><h2 className="font-semibold text-slate-700 dark:text-slate-300">Monthly Expenses</h2></div>
-                  <p className="text-3xl font-extrabold text-slate-900 dark:text-white">{formatMoney(currentMonthData.expense)}</p>
+                  <div className="flex items-center gap-2 text-slate-500 dk-text-slate-400 mb-2"><TrendingDown className="w-5 h-5 text-rose-500" /><h2 className="font-semibold text-slate-700 dk-text-slate-300">Monthly Expenses</h2></div>
+                  <p className="text-3xl font-extrabold text-slate-900 dk-text-white">{formatMoney(currentMonthData.expense)}</p>
                 </div>
-                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                  <div className="flex justify-between text-xs mb-1 font-semibold text-slate-600 dark:text-slate-300"><span>Target</span><span>{formatMoney(monthlyTarget)}</span></div>
-                  <div className="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className="mt-4 pt-4 border-t border-slate-100 dk-border-slate-700">
+                  <div className="flex justify-between text-xs mb-1 font-semibold text-slate-600 dk-text-slate-300"><span>Target</span><span>{formatMoney(monthlyTarget)}</span></div>
+                  <div className="h-2 w-full bg-slate-100 dk-bg-slate-700 rounded-full overflow-hidden">
                     <div className={`h-full rounded-full ${currentMonthData.expense > monthlyTarget ? 'bg-rose-500' : 'bg-indigo-500'}`} style={{ width: `${Math.min((currentMonthData.expense / (monthlyTarget || 1)) * 100, 100)}%` }}></div>
                   </div>
                 </div>
@@ -733,8 +818,8 @@ export default function App() {
               <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-6 text-white shadow-lg flex flex-col justify-between group relative hover:z-30">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2 text-indigo-400"><Activity className="w-5 h-5" /><h2 className="font-semibold text-white">Health Score</h2></div>
-                    <span className="text-2xl font-black text-white">{financialHealth.score}/100</span>
+                    <div className="flex items-center gap-2 text-indigo-400 min-w-0"><Activity className="w-5 h-5 shrink-0" /><h2 className="font-semibold text-white whitespace-nowrap">Health Score</h2></div>
+                    <span className="text-xl font-black text-white whitespace-nowrap shrink-0">{financialHealth.score}/100</span>
                   </div>
                   <p className="text-xs text-slate-200 mt-2 leading-relaxed">{financialHealth.message}</p>
                 </div>
@@ -757,17 +842,17 @@ export default function App() {
 
             {}
             {showBudgetSettings && (
-              <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-3xl p-6 border border-indigo-200 dark:border-indigo-800 relative z-10">
-                <h3 className="text-lg font-bold mb-4 text-indigo-950 dark:text-indigo-200">Set Monthly Budget Targets</h3>
+              <div className="bg-indigo-50 dk-bg-indigo-900-20 rounded-3xl p-6 border border-indigo-200 dk-border-indigo-800 relative z-10">
+                <h3 className="text-lg font-bold mb-4 text-indigo-950 dk-text-indigo-200">Set Monthly Budget Targets</h3>
                 <div className="flex flex-wrap gap-4">
-                  <div className="dark-card bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
-                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 block mb-1">Overall Limit</label>
-                    <input type="number" value={monthlyTarget} onChange={(e) => setMonthlyTarget(Number(e.target.value))} className="w-32 px-3 py-1 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white transition-all outline-none font-bold" />
+                  <div className="dark-card bg-white dk-bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dk-border-slate-700">
+                    <label className="text-xs font-semibold text-slate-600 dk-text-slate-400 block mb-1">Overall Limit</label>
+                    <input type="number" value={monthlyTarget} onChange={(e) => setMonthlyTarget(Number(e.target.value))} className="w-32 px-3 py-1 bg-slate-50 dk-bg-slate-900 rounded-lg border border-slate-300 dk-border-slate-700 text-slate-900 dk-text-white transition-all outline-none font-bold" />
                   </div>
                   {EXPENSE_CATEGORIES.map(cat => (
-                    <div key={cat.id} className="dark-card bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
-                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 block mb-1">{cat.icon} {cat.label}</label>
-                      <input type="number" value={categoryTargets[cat.id] || ''} onChange={(e) => handleBudgetChange(cat.id, e.target.value)} placeholder="No limit" className="w-28 px-3 py-1 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white transition-all outline-none font-bold" />
+                    <div key={cat.id} className="dark-card bg-white dk-bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dk-border-slate-700">
+                      <label className="text-xs font-semibold text-slate-600 dk-text-slate-400 block mb-1">{cat.icon} {cat.label}</label>
+                      <input type="number" value={categoryTargets[cat.id] || ''} onChange={(e) => handleBudgetChange(cat.id, e.target.value)} placeholder="No limit" className="w-28 px-3 py-1 bg-slate-50 dk-bg-slate-900 rounded-lg border border-slate-300 dk-border-slate-700 text-slate-900 dk-text-white transition-all outline-none font-bold" />
                     </div>
                   ))}
                 </div>
@@ -776,95 +861,95 @@ export default function App() {
 
             {}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in-up stagger-1 relative z-0">
-              <div onClick={() => setIsHeatmapOpen(true)} className="dark-card bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-center items-center cursor-pointer group hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-700 transition-all duration-300 min-h-[200px]">
-                <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300"><Calendar className="w-8 h-8 text-indigo-500" /></div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Daily Heatmap</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 text-center mt-1">Explore daily spending patterns.</p>
+              <div onClick={() => setIsHeatmapOpen(true)} className="dark-card bg-white dk-bg-slate-800 rounded-3xl p-6 border border-slate-200 dk-border-slate-700 shadow-sm flex flex-col justify-center items-center cursor-pointer group hover:shadow-md hover:border-indigo-300 dk-hover-border-indigo-700 transition-all duration-300 min-h-[200px]">
+                <div className="w-16 h-16 bg-indigo-50 dk-bg-indigo-900-30 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300"><Calendar className="w-8 h-8 text-indigo-500" /></div>
+                <h3 className="text-lg font-bold text-slate-900 dk-text-white">Daily Heatmap</h3>
+                <p className="text-sm text-slate-500 dk-text-slate-400 text-center mt-1">Explore daily spending patterns.</p>
               </div>
               
-              <div onClick={() => setIsTrendOpen(true)} className="dark-card bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-center items-center cursor-pointer group hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-700 transition-all duration-300 min-h-[200px]">
-                <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300"><BarChart className="w-8 h-8 text-emerald-500" /></div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">6-Month Trend</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 text-center mt-1">Visualize income vs expenses.</p>
+              <div onClick={() => setIsTrendOpen(true)} className="dark-card bg-white dk-bg-slate-800 rounded-3xl p-6 border border-slate-200 dk-border-slate-700 shadow-sm flex flex-col justify-center items-center cursor-pointer group hover:shadow-md hover:border-emerald-300 dk-hover-border-emerald-700 transition-all duration-300 min-h-[200px]">
+                <div className="w-16 h-16 bg-emerald-50 dk-bg-emerald-900-30 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300"><BarChart className="w-8 h-8 text-emerald-500" /></div>
+                <h3 className="text-lg font-bold text-slate-900 dk-text-white">6-Month Trend</h3>
+                <p className="text-sm text-slate-500 dk-text-slate-400 text-center mt-1">Visualize income vs expenses.</p>
               </div>
 
-              <div className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/10 rounded-3xl p-6 border border-orange-200 dark:border-orange-800/30 shadow-sm flex flex-col justify-between min-h-[200px]">
+              <div className="bg-gradient-to-br from-orange-50 to-amber-50 dk-from-orange-900-10 rounded-3xl p-6 border border-orange-200 dk-border-orange-800-30 shadow-sm flex flex-col justify-between min-h-[200px]">
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-4"><Flame className="w-5 h-5 text-orange-500" /> Streaks & Habits</h3>
+                  <h3 className="text-lg font-bold text-slate-900 dk-text-white flex items-center gap-2 mb-4"><Flame className="w-5 h-5 text-orange-500" /> Streaks & Habits</h3>
                   <div className="space-y-3">
-                    <div className="dark-card flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-orange-100 dark:border-slate-700">
-                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">No-Spend Streak</span>
+                    <div className="dark-card flex justify-between items-center bg-white dk-bg-slate-800 p-3 rounded-xl shadow-sm border border-orange-100 dk-border-slate-700">
+                      <span className="text-sm font-semibold text-slate-700 dk-text-slate-300">No-Spend Streak</span>
                       <span className="font-extrabold text-orange-500 flex items-center gap-1"><Flame className="w-4 h-4 fill-current" /> {noSpendStreak} Days</span>
                     </div>
-                    <div className="dark-card flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-orange-100 dark:border-slate-700">
-                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Days Remaining</span>
-                      <span className="font-extrabold text-slate-800 dark:text-slate-100">{new Date(parseInt(selectedMonth.split('-')[0], 10), parseInt(selectedMonth.split('-')[1], 10), 0).getDate() - parseInt(new Date().toISOString().split('T')[0].split('-')[2], 10) > 0 ? new Date(parseInt(selectedMonth.split('-')[0], 10), parseInt(selectedMonth.split('-')[1], 10), 0).getDate() - parseInt(new Date().toISOString().split('T')[0].split('-')[2], 10) : 0} Days</span>
+                    <div className="dark-card flex justify-between items-center bg-white dk-bg-slate-800 p-3 rounded-xl shadow-sm border border-orange-100 dk-border-slate-700">
+                      <span className="text-sm font-semibold text-slate-700 dk-text-slate-300">Days Remaining</span>
+                      <span className="font-extrabold text-slate-800 dk-text-slate-100">{new Date(parseInt(selectedMonth.split('-')[0], 10), parseInt(selectedMonth.split('-')[1], 10), 0).getDate() - parseInt(new Date().toISOString().split('T')[0].split('-')[2], 10) > 0 ? new Date(parseInt(selectedMonth.split('-')[0], 10), parseInt(selectedMonth.split('-')[1], 10), 0).getDate() - parseInt(new Date().toISOString().split('T')[0].split('-')[2], 10) : 0} Days</span>
                     </div>
                   </div>
                 </div>
-                {frequentCategory && <div className="mt-4 p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl text-xs font-semibold text-indigo-900 dark:text-indigo-300">💡 You've purchased items under <strong>{frequentCategory.label}</strong> {frequentCategory.count} times this month.</div>}
+                {frequentCategory && <div className="mt-4 p-3 bg-indigo-50 dk-bg-indigo-900-30 rounded-xl text-xs font-semibold text-indigo-900 dk-text-indigo-300">💡 You've purchased items under <strong>{frequentCategory.label}</strong> {frequentCategory.count} times this month.</div>}
               </div>
             </div>
 
             {}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
               <div className="lg:col-span-1 space-y-6">
-                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 rounded-3xl p-6 border border-indigo-200 dark:border-indigo-800/50 shadow-sm">
-                  <h3 className="text-lg font-bold mb-2 flex items-center gap-2 text-indigo-950 dark:text-indigo-200"><Sparkles className="w-5 h-5 text-indigo-500" /> Magic Add & OCR</h3>
+                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dk-from-indigo-900-20 rounded-3xl p-6 border border-indigo-200 dk-border-indigo-800-50 shadow-sm">
+                  <h3 className="text-lg font-bold mb-2 flex items-center gap-2 text-indigo-950 dk-text-indigo-200"><Sparkles className="w-5 h-5 text-indigo-500" /> Magic Add & OCR</h3>
                   <div className="flex gap-2 mt-4">
-                    <input type="text" value={magicPrompt} onChange={(e) => setMagicPrompt(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleMagicAdd()} placeholder="e.g. 240 snacks..." className="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-indigo-500" />
+                    <input type="text" value={magicPrompt} onChange={(e) => setMagicPrompt(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleMagicAdd()} placeholder="e.g. 240 snacks..." className="flex-1 px-3 py-2 bg-white dk-bg-slate-800 border border-slate-300 dk-border-slate-700 rounded-xl text-sm text-slate-900 dk-text-white placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-indigo-500" />
                     <button onClick={handleMagicAdd} disabled={isMagicLoading} className="px-3 py-2 bg-indigo-600 text-white rounded-xl shadow disabled:opacity-70 hover:bg-indigo-700">{isMagicLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}</button>
                     <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
                     <button onClick={() => fileInputRef.current?.click()} disabled={isScanning} className="px-3 py-2 bg-purple-600 text-white rounded-xl shadow flex items-center hover:bg-purple-700" title="Scan Receipt">{isScanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}</button>
                   </div>
                 </div>
 
-                <div className="dark-card bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
-                  <h3 className="text-lg font-bold mb-6 flex items-center gap-2 text-slate-900 dark:text-white">{editingId ? <Edit2 className="w-5 h-5 text-indigo-500" /> : <Plus className="w-5 h-5 text-indigo-500" />}{editingId ? 'Edit Transaction' : 'Manual Entry'}</h3>
+                <div className="dark-card bg-white dk-bg-slate-800 rounded-3xl p-6 border border-slate-200 dk-border-slate-700 shadow-sm">
+                  <h3 className="text-lg font-bold mb-6 flex items-center gap-2 text-slate-900 dk-text-white">{editingId ? <Edit2 className="w-5 h-5 text-indigo-500" /> : <Plus className="w-5 h-5 text-indigo-500" />}{editingId ? 'Edit Transaction' : 'Manual Entry'}</h3>
                   <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-xl">
-                      <button type="button" onClick={() => handleInputChange({ target: { name: 'type', value: 'expense' }})} className={`flex-1 py-1.5 text-sm font-bold rounded-lg ${formData.type === 'expense' ? 'bg-white dark:bg-slate-700 text-rose-500 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}>Expense</button>
-                      <button type="button" onClick={() => handleInputChange({ target: { name: 'type', value: 'income' }})} className={`flex-1 py-1.5 text-sm font-bold rounded-lg ${formData.type === 'income' ? 'bg-white dark:bg-slate-700 text-emerald-500 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}>Income</button>
+                    <div className="flex bg-slate-100 dk-bg-slate-900 p-1 rounded-xl">
+                      <button type="button" onClick={() => handleInputChange({ target: { name: 'type', value: 'expense' }})} className={`flex-1 py-1.5 text-sm font-bold rounded-lg ${formData.type === 'expense' ? 'bg-white dk-bg-slate-700 text-rose-500 shadow-sm' : 'text-slate-500 dk-text-slate-400'}`}>Expense</button>
+                      <button type="button" onClick={() => handleInputChange({ target: { name: 'type', value: 'income' }})} className={`flex-1 py-1.5 text-sm font-bold rounded-lg ${formData.type === 'income' ? 'bg-white dk-bg-slate-700 text-emerald-500 shadow-sm' : 'text-slate-500 dk-text-slate-400'}`}>Income</button>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Amount</label>
+                      <label className="block text-xs font-bold text-slate-600 dk-text-slate-300 mb-1">Amount</label>
                       <div className="relative">
                         <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500"><CurrencyIcon className="w-4 h-4" /></span>
-                        <input type="number" name="amount" value={formData.amount} onChange={handleInputChange} placeholder="0.00" required className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500" />
+                        <input type="number" name="amount" value={formData.amount} onChange={handleInputChange} placeholder="0.00" required className="w-full pl-9 pr-3 py-2 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-700 rounded-xl text-slate-900 dk-text-white text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500" />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Category</label>
-                        <select name="category" value={formData.category} onChange={handleInputChange} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-sm font-medium outline-none">
+                        <label className="block text-xs font-bold text-slate-600 dk-text-slate-300 mb-1">Category</label>
+                        <select name="category" value={formData.category} onChange={handleInputChange} className="w-full px-3 py-2 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-700 rounded-xl text-slate-900 dk-text-white text-sm font-medium outline-none">
                           {formData.type === 'expense' ? EXPENSE_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>) : INCOME_SOURCES.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Payment Method</label>
-                        <select name="paymentMethod" value={formData.paymentMethod} onChange={handleInputChange} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-sm font-medium outline-none">
+                        <label className="block text-xs font-bold text-slate-600 dk-text-slate-300 mb-1">Payment Method</label>
+                        <select name="paymentMethod" value={formData.paymentMethod} onChange={handleInputChange} className="w-full px-3 py-2 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-700 rounded-xl text-slate-900 dk-text-white text-sm font-medium outline-none">
                           {PAYMENT_METHODS.map(p => <option key={p.id} value={p.id}>{p.icon} {p.label}</option>)}
                         </select>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
-                      <div><label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Date</label><input type="date" name="date" value={formData.date} onChange={handleInputChange} required className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-sm outline-none" /></div>
-                      <div><label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Note</label><input type="text" name="note" value={formData.note} onChange={handleInputChange} placeholder="e.g. Coffee" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-sm outline-none" /></div>
+                      <div><label className="block text-xs font-bold text-slate-600 dk-text-slate-300 mb-1">Date</label><input type="date" name="date" value={formData.date} onChange={handleInputChange} required className="w-full px-3 py-2 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-700 rounded-xl text-slate-900 dk-text-white text-sm outline-none" /></div>
+                      <div><label className="block text-xs font-bold text-slate-600 dk-text-slate-300 mb-1">Note</label><input type="text" name="note" value={formData.note} onChange={handleInputChange} placeholder="e.g. Coffee" className="w-full px-3 py-2 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-700 rounded-xl text-slate-900 dk-text-white text-sm outline-none" /></div>
                     </div>
 
                     {formData.type === 'expense' && !editingId && (
-                      <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
-                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                      <div className="pt-2 border-t border-slate-100 dk-border-slate-700">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dk-text-slate-300 cursor-pointer">
                           <input type="checkbox" checked={isSplit} onChange={(e) => setIsSplit(e.target.checked)} className="rounded text-indigo-600" />
                           <Share2 className="w-4 h-4 text-indigo-500" /> Split expense?
                         </label>
                         {isSplit && (
                           <div className="mt-2 flex gap-2">
-                            <input type="text" placeholder="Friend name" value={splitDetails.person} onChange={e => setSplitDetails({...splitDetails, person: e.target.value})} className="w-1/2 px-2 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white" />
-                            <input type="number" placeholder="Their share" value={splitDetails.amount} onChange={e => setSplitDetails({...splitDetails, amount: e.target.value})} className="w-1/2 px-2 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white" />
+                            <input type="text" placeholder="Friend name" value={splitDetails.person} onChange={e => setSplitDetails({...splitDetails, person: e.target.value})} className="w-1/2 px-2 py-1.5 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-700 rounded-lg text-xs text-slate-900 dk-text-white" />
+                            <input type="number" placeholder="Their share" value={splitDetails.amount} onChange={e => setSplitDetails({...splitDetails, amount: e.target.value})} className="w-1/2 px-2 py-1.5 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-700 rounded-lg text-xs text-slate-900 dk-text-white" />
                           </div>
                         )}
                       </div>
@@ -873,13 +958,13 @@ export default function App() {
                   </form>
                 </div>
 
-                <div className="dark-card bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2"><PieChartIcon className="w-5 h-5 text-indigo-500" /> Top Spending</h3>
+                <div className="dark-card bg-white dk-bg-slate-800 rounded-3xl p-6 border border-slate-200 dk-border-slate-700 shadow-sm space-y-4">
+                  <h3 className="text-lg font-bold text-slate-900 dk-text-white flex items-center gap-2"><PieChartIcon className="w-5 h-5 text-indigo-500" /> Top Spending</h3>
                   <div className="space-y-3">
                     {expensesByCategory.slice(0, 5).map(cat => (
                       <div key={cat.id}>
-                        <div className="flex justify-between text-xs mb-1 font-bold text-slate-700 dark:text-slate-300"><span>{cat.icon} {cat.label}</span><span>{formatMoney(cat.amount)}</span></div>
-                        <div className="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden"><div className={`h-full ${cat.color} rounded-full`} style={{ width: `${cat.percentage}%` }}></div></div>
+                        <div className="flex justify-between text-xs mb-1 font-bold text-slate-700 dk-text-slate-300"><span>{cat.icon} {cat.label}</span><span>{formatMoney(cat.amount)}</span></div>
+                        <div className="h-2 w-full bg-slate-100 dk-bg-slate-700 rounded-full overflow-hidden"><div className={`h-full ${cat.color} rounded-full`} style={{ width: `${cat.percentage}%` }}></div></div>
                       </div>
                     ))}
                   </div>
@@ -889,17 +974,17 @@ export default function App() {
 
               {}
               <div className="lg:col-span-2">
-                <div className="dark-card bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm min-h-[600px] flex flex-col">
+                <div className="dark-card bg-white dk-bg-slate-800 rounded-3xl p-6 border border-slate-200 dk-border-slate-700 shadow-sm min-h-[600px] flex flex-col">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2"><ArrowRightLeft className="w-5 h-5 text-indigo-500" /> Transactions ({selectedMonth})</h3>
+                    <h3 className="text-lg font-bold text-slate-900 dk-text-white flex items-center gap-2"><ArrowRightLeft className="w-5 h-5 text-indigo-500" /> Transactions ({selectedMonth})</h3>
                     <div className="flex flex-wrap items-center gap-2">
                       <div className="relative">
                         <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400"><Search className="w-3.5 h-3.5" /></span>
-                        <input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-40 pl-8 pr-2 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-medium outline-none" />
+                        <input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-40 pl-8 pr-2 py-1.5 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-700 rounded-lg text-xs text-slate-900 dk-text-white font-medium outline-none" />
                       </div>
-                      <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-xl">
+                      <div className="flex bg-slate-100 dk-bg-slate-900 p-1 rounded-xl">
                         {['all', 'income', 'expense'].map((f) => (
-                          <button key={f} onClick={() => setFilter(f)} className={`px-2.5 py-1 text-xs font-bold rounded-lg capitalize ${filter === f ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}>{f}</button>
+                          <button key={f} onClick={() => setFilter(f)} className={`px-2.5 py-1 text-xs font-bold rounded-lg capitalize ${filter === f ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-300 shadow-sm' : 'text-slate-500 dk-text-slate-400'}`}>{f}</button>
                         ))}
                       </div>
                     </div>
@@ -913,17 +998,17 @@ export default function App() {
                         const isIncome = transaction.type === 'income';
                         const catInfo = isIncome ? INCOME_SOURCES.find(c => c.id === transaction.category) : EXPENSE_CATEGORIES.find(c => c.id === transaction.category);
                         return (
-                          <div key={transaction.id} className="group flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
+                          <div key={transaction.id} className="group flex items-center justify-between p-4 rounded-2xl bg-slate-50 dk-bg-slate-800-50 border border-slate-100 dk-border-slate-700-50 hover:border-slate-300 dk-hover-border-slate-600 transition-colors">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-700 flex items-center justify-center text-lg shadow-sm border border-slate-200 dark:border-slate-600">{catInfo?.icon || '📦'}</div>
+                              <div className="w-10 h-10 rounded-xl bg-white dk-bg-slate-700 flex items-center justify-center text-lg shadow-sm border border-slate-200 dk-border-slate-600">{catInfo?.icon || '📦'}</div>
                               <div>
-                                <p className="font-bold text-sm text-slate-900 dark:text-slate-100">{catInfo?.label || 'Other'}</p>
-                                {transaction.note && <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">"{transaction.note}"</p>}
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{transaction.date} • {transaction.paymentMethod?.toUpperCase() || 'UPI'}</p>
+                                <p className="font-bold text-sm text-slate-900 dk-text-slate-100">{catInfo?.label || 'Other'}</p>
+                                {transaction.note && <p className="text-xs text-slate-600 dk-text-slate-400 font-medium">"{transaction.note}"</p>}
+                                <p className="text-[10px] text-slate-500 dk-text-slate-400 mt-0.5">{transaction.date} • {transaction.paymentMethod?.toUpperCase() || 'UPI'}</p>
                               </div>
                             </div>
                             <div className="flex items-center gap-3">
-                              <span className={`font-extrabold text-sm ${isIncome ? 'text-emerald-500' : 'text-slate-900 dark:text-slate-100'}`}>{isIncome ? '+' : '-'}{formatMoney(transaction.amount)}</span>
+                              <span className={`font-extrabold text-sm ${isIncome ? 'text-emerald-500' : 'text-slate-900 dk-text-slate-100'}`}>{isIncome ? '+' : '-'}{formatMoney(transaction.amount)}</span>
                               <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button onClick={() => initiateEdit(transaction)} className="p-1.5 text-slate-500 hover:text-indigo-600"><Edit2 className="w-3.5 h-3.5" /></button>
                                 <button onClick={() => deleteTransaction(transaction.id)} className="p-1.5 text-slate-500 hover:text-rose-600"><Trash2 className="w-3.5 h-3.5" /></button>
@@ -948,31 +1033,31 @@ export default function App() {
               <div className="bg-gradient-to-br from-emerald-500 to-teal-700 rounded-3xl p-6 text-white shadow-lg"><h2 className="text-sm font-semibold text-emerald-100 mb-1">Projected Monthly Savings</h2><p className="text-4xl font-extrabold">{formatMoney(projections.projectedSavings)}</p></div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="dark-card bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2"><Repeat className="w-5 h-5 text-indigo-500" /> Recurring Expenses</h3>
+              <div className="dark-card bg-white dk-bg-slate-800 rounded-3xl p-6 border border-slate-200 dk-border-slate-700 shadow-sm flex flex-col">
+                <h3 className="text-lg font-bold text-slate-900 dk-text-white mb-4 flex items-center gap-2"><Repeat className="w-5 h-5 text-indigo-500" /> Recurring Expenses</h3>
                 <form onSubmit={handleRecurringSubmit} className="flex flex-wrap gap-2 mb-4">
-                  <input type="text" placeholder="Name" value={recurringForm.name} onChange={e => setRecurringForm({...recurringForm, name: e.target.value})} className="flex-1 min-w-[120px] px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white" required />
-                  <input type="number" placeholder="Amt" value={recurringForm.amount} onChange={e => setRecurringForm({...recurringForm, amount: e.target.value})} className="w-24 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-bold" required />
-                  <input type="number" min="1" max="31" placeholder="Day" value={recurringForm.day} onChange={e => setRecurringForm({...recurringForm, day: e.target.value})} className="w-16 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-bold" required />
+                  <input type="text" placeholder="Name" value={recurringForm.name} onChange={e => setRecurringForm({...recurringForm, name: e.target.value})} className="flex-1 min-w-[120px] px-3 py-2 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-700 rounded-xl text-xs text-slate-900 dk-text-white" required />
+                  <input type="number" placeholder="Amt" value={recurringForm.amount} onChange={e => setRecurringForm({...recurringForm, amount: e.target.value})} className="w-24 px-3 py-2 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-700 rounded-xl text-xs text-slate-900 dk-text-white font-bold" required />
+                  <input type="number" min="1" max="31" placeholder="Day" value={recurringForm.day} onChange={e => setRecurringForm({...recurringForm, day: e.target.value})} className="w-16 px-3 py-2 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-700 rounded-xl text-xs text-slate-900 dk-text-white font-bold" required />
                   <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700">Add</button>
                 </form>
                 <div className="space-y-3 flex-1 overflow-y-auto max-h-60">
                   {recurring.map(r => (
-                    <div key={r.id} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-900 rounded-xl text-sm border border-slate-200 dark:border-slate-800"><div className="flex-1"><p className="font-bold text-slate-900 dark:text-slate-100">{r.name}</p><p className="text-xs text-slate-500 dark:text-slate-400">Day {r.day}</p></div><div className="flex items-center gap-3"><span className="font-bold text-rose-500">{formatMoney(r.amount)}</span><button onClick={() => setRecurring(prev => prev.filter(x => x.id !== r.id))} className="text-slate-400 hover:text-rose-500"><Trash2 className="w-4 h-4" /></button></div></div>
+                    <div key={r.id} className="flex justify-between items-center p-3 bg-slate-50 dk-bg-slate-900 rounded-xl text-sm border border-slate-200 dk-border-slate-800"><div className="flex-1"><p className="font-bold text-slate-900 dk-text-slate-100">{r.name}</p><p className="text-xs text-slate-500 dk-text-slate-400">Day {r.day}</p></div><div className="flex items-center gap-3"><span className="font-bold text-rose-500">{formatMoney(r.amount)}</span><button onClick={() => setRecurring(prev => prev.filter(x => x.id !== r.id))} className="text-slate-400 hover:text-rose-500"><Trash2 className="w-4 h-4" /></button></div></div>
                   ))}
                 </div>
               </div>
-              <div className="dark-card bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2"><Clock className="w-5 h-5 text-indigo-500" /> Planned Future Expenses</h3>
+              <div className="dark-card bg-white dk-bg-slate-800 rounded-3xl p-6 border border-slate-200 dk-border-slate-700 shadow-sm flex flex-col">
+                <h3 className="text-lg font-bold text-slate-900 dk-text-white mb-4 flex items-center gap-2"><Clock className="w-5 h-5 text-indigo-500" /> Planned Future Expenses</h3>
                 <form onSubmit={handlePlannedSubmit} className="flex flex-wrap gap-2 mb-4">
-                  <input type="text" placeholder="Name" value={plannedForm.name} onChange={e => setPlannedForm({...plannedForm, name: e.target.value})} className="flex-1 min-w-[120px] px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white" required />
-                  <input type="number" placeholder="Amt" value={plannedForm.amount} onChange={e => setPlannedForm({...plannedForm, amount: e.target.value})} className="w-24 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-bold" required />
-                  <input type="date" value={plannedForm.date} onChange={e => setPlannedForm({...plannedForm, date: e.target.value})} className="w-32 px-2 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-bold" required />
+                  <input type="text" placeholder="Name" value={plannedForm.name} onChange={e => setPlannedForm({...plannedForm, name: e.target.value})} className="flex-1 min-w-[120px] px-3 py-2 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-700 rounded-xl text-xs text-slate-900 dk-text-white" required />
+                  <input type="number" placeholder="Amt" value={plannedForm.amount} onChange={e => setPlannedForm({...plannedForm, amount: e.target.value})} className="w-24 px-3 py-2 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-700 rounded-xl text-xs text-slate-900 dk-text-white font-bold" required />
+                  <input type="date" value={plannedForm.date} onChange={e => setPlannedForm({...plannedForm, date: e.target.value})} className="w-32 px-2 py-2 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-700 rounded-xl text-xs text-slate-900 dk-text-white font-bold" required />
                   <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700">Add</button>
                 </form>
                 <div className="space-y-3 flex-1 overflow-y-auto max-h-60">
                   {planned.map(p => (
-                    <div key={p.id} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-900 rounded-xl text-sm border border-slate-200 dark:border-slate-800"><div className="flex-1"><p className="font-bold text-slate-900 dark:text-slate-100">{p.name}</p><p className="text-xs text-slate-500 dark:text-slate-400">{p.date}</p></div><div className="flex items-center gap-3"><span className="font-bold text-rose-500">{formatMoney(p.amount)}</span><button onClick={() => setPlanned(prev => prev.filter(x => x.id !== p.id))} className="text-slate-400 hover:text-rose-500"><Trash2 className="w-4 h-4" /></button></div></div>
+                    <div key={p.id} className="flex justify-between items-center p-3 bg-slate-50 dk-bg-slate-900 rounded-xl text-sm border border-slate-200 dk-border-slate-800"><div className="flex-1"><p className="font-bold text-slate-900 dk-text-slate-100">{p.name}</p><p className="text-xs text-slate-500 dk-text-slate-400">{p.date}</p></div><div className="flex items-center gap-3"><span className="font-bold text-rose-500">{formatMoney(p.amount)}</span><button onClick={() => setPlanned(prev => prev.filter(x => x.id !== p.id))} className="text-slate-400 hover:text-rose-500"><Trash2 className="w-4 h-4" /></button></div></div>
                   ))}
                 </div>
               </div>
@@ -989,42 +1074,49 @@ export default function App() {
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1 space-y-6">
-                <div className="dark-card bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm"><h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2"><Landmark className="w-5 h-5 text-indigo-500" /> Log New Loan</h3>
+                <div className="dark-card bg-white dk-bg-slate-800 rounded-3xl p-6 border border-slate-200 dk-border-slate-700 shadow-sm"><h3 className="text-lg font-bold text-slate-900 dk-text-white mb-6 flex items-center gap-2"><Landmark className="w-5 h-5 text-indigo-500" /> Log New Loan</h3>
                   <form onSubmit={handleLoanSubmit} className="space-y-4">
-                    <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-xl">
-                      <button type="button" onClick={() => setLoanForm(p => ({...p, type: 'lent'}))} className={`flex-1 py-1.5 text-sm font-bold rounded-lg ${loanForm.type === 'lent' ? 'bg-white text-emerald-500 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}>I Lent</button>
-                      <button type="button" onClick={() => setLoanForm(p => ({...p, type: 'borrowed'}))} className={`flex-1 py-1.5 text-sm font-bold rounded-lg ${loanForm.type === 'borrowed' ? 'bg-white text-rose-500 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}>I Borrowed</button>
+                    <div className="flex bg-slate-100 dk-bg-slate-900 p-1 rounded-xl">
+                      <button type="button" onClick={() => setLoanForm(p => ({...p, type: 'lent'}))} className={`flex-1 py-1.5 text-sm font-bold rounded-lg ${loanForm.type === 'lent' ? 'bg-white dk-bg-slate-700 text-emerald-500 shadow-sm' : 'text-slate-500 dk-text-slate-400'}`}>I Lent</button>
+                      <button type="button" onClick={() => setLoanForm(p => ({...p, type: 'borrowed'}))} className={`flex-1 py-1.5 text-sm font-bold rounded-lg ${loanForm.type === 'borrowed' ? 'bg-white dk-bg-slate-700 text-rose-500 shadow-sm' : 'text-slate-500 dk-text-slate-400'}`}>I Borrowed</button>
                     </div>
-                    <div><input type="text" value={loanForm.person} onChange={e => setLoanForm(p => ({...p, person: e.target.value}))} placeholder="Person/Entity" required className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white font-medium" /></div>
-                    <div><input type="number" value={loanForm.amount} onChange={e => setLoanForm(p => ({...p, amount: e.target.value}))} placeholder="Amount" required className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white font-bold" /></div>
+                    <div><input type="text" value={loanForm.person} onChange={e => setLoanForm(p => ({...p, person: e.target.value}))} placeholder="Person/Entity" required className="w-full px-3 py-2 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-700 rounded-xl text-sm text-slate-900 dk-text-white font-medium" /></div>
+                    <div><input type="number" value={loanForm.amount} onChange={e => setLoanForm(p => ({...p, amount: e.target.value}))} placeholder="Amount" required className="w-full px-3 py-2 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-700 rounded-xl text-sm text-slate-900 dk-text-white font-bold" /></div>
                     <button type="submit" className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow">Log Loan</button>
                   </form>
                 </div>
               </div>
               <div className="lg:col-span-2 space-y-4">
+                {loans.length === 0 && (
+                  <div className="dark-card bg-white dk-bg-slate-800 rounded-3xl p-10 border border-dashed border-slate-300 dk-border-slate-700 flex flex-col items-center justify-center text-center">
+                    <Landmark className="w-10 h-10 text-slate-300 dk-text-slate-400 mb-3" />
+                    <p className="font-semibold text-slate-700 dk-text-slate-300">No loans logged yet</p>
+                    <p className="text-sm text-slate-500 dk-text-slate-400 mt-1">Add one on the left to start tracking who owes what.</p>
+                  </div>
+                )}
                 {loans.map(loan => {
                   const isSettled = loan.amountPaid >= loan.amount;
                   return (
-                    <div key={loan.id} className="dark-card bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden group">
+                    <div key={loan.id} className="dark-card bg-white dk-bg-slate-800 rounded-2xl p-5 border border-slate-200 dk-border-slate-700 shadow-sm relative overflow-hidden group">
                       {isSettled && <div className="absolute top-0 right-0 p-4"><CheckCircle className="w-6 h-6 text-emerald-500 opacity-50"/></div>}
                       <div className="flex justify-between items-start mb-4">
                         <div>
-                          <span className={`px-2 py-0.5 rounded text-xs font-bold ${loan.type === 'lent' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>{loan.type === 'lent' ? 'LENT TO' : 'BORROWED FROM'}</span>
-                          <span className="font-bold ml-2 text-slate-900 dark:text-white">{loan.person}</span>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">{loan.note} • {loan.date}</p>
+                          <span className={`px-2 py-0.5 rounded text-xs font-bold ${loan.type === 'lent' ? 'bg-emerald-100 text-emerald-800 dk-bg-emerald-900-30 dk-text-emerald-300' : 'bg-rose-100 text-rose-800 dk-bg-rose-900-20 dk-text-rose-300'}`}>{loan.type === 'lent' ? 'LENT TO' : 'BORROWED FROM'}</span>
+                          <span className="font-bold ml-2 text-slate-900 dk-text-white">{loan.person}</span>
+                          <p className="text-xs text-slate-500 dk-text-slate-400 mt-1 font-medium">{loan.note} • {loan.date}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-xl font-black text-slate-900 dark:text-white">{formatMoney(loan.amount)}</p>
+                          <p className="text-xl font-black text-slate-900 dk-text-white">{formatMoney(loan.amount)}</p>
                           <button onClick={() => setLoans(prev => prev.filter(l => l.id !== loan.id))} className="text-xs text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 mt-1">Delete</button>
                         </div>
                       </div>
-                      <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-                         <div className="flex justify-between text-sm mb-2 font-semibold text-slate-700 dark:text-slate-300"><span>Paid Back</span><span>{formatMoney(loan.amountPaid)} / {formatMoney(loan.amount)}</span></div>
-                         <div className="h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mb-4"><div className="h-full bg-indigo-500 rounded-full" style={{ width: `${Math.min((loan.amountPaid/loan.amount)*100, 100)}%` }}></div></div>
+                      <div className="bg-slate-50 dk-bg-slate-900-50 p-4 rounded-xl border border-slate-200 dk-border-slate-800">
+                         <div className="flex justify-between text-sm mb-2 font-semibold text-slate-700 dk-text-slate-300"><span>Paid Back</span><span>{formatMoney(loan.amountPaid)} / {formatMoney(loan.amount)}</span></div>
+                         <div className="h-2 w-full bg-slate-200 dk-bg-slate-700 rounded-full overflow-hidden mb-4"><div className="h-full bg-indigo-500 rounded-full" style={{ width: `${Math.min((loan.amountPaid/loan.amount)*100, 100)}%` }}></div></div>
                          {!isSettled && (
                            <div className="flex gap-2">
-                             <input type="number" value={paymentInputs[loan.id] || ''} onChange={e => setPaymentInputs({...paymentInputs, [loan.id]: e.target.value})} placeholder="Log partial payment" className="flex-1 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white font-bold" />
-                             <button onClick={() => recordLoanPayment(loan.id)} className="px-4 py-2 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 rounded-lg text-sm font-bold">Record</button>
+                             <input type="number" value={paymentInputs[loan.id] || ''} onChange={e => setPaymentInputs({...paymentInputs, [loan.id]: e.target.value})} placeholder="Log partial payment" className="flex-1 px-3 py-2 bg-white dk-bg-slate-900 border border-slate-300 dk-border-slate-700 rounded-lg text-sm text-slate-900 dk-text-white font-bold" />
+                             <button onClick={() => recordLoanPayment(loan.id)} className="px-4 py-2 bg-indigo-100 text-indigo-700 dk-bg-indigo-900-40 dk-text-indigo-300 rounded-lg text-sm font-bold">Record</button>
                            </div>
                          )}
                       </div>
@@ -1039,23 +1131,30 @@ export default function App() {
         {}
         {activeTab === 'goals' && (
           <div className="animate-fade-in-up space-y-6">
-             <div className="dark-card bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
-               <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Add Savings Goal</h3>
+             <div className="dark-card bg-white dk-bg-slate-800 rounded-3xl p-6 border border-slate-200 dk-border-slate-700 shadow-sm">
+               <h3 className="text-lg font-bold text-slate-900 dk-text-white mb-4">Add Savings Goal</h3>
                <form onSubmit={handleGoalSubmit} className="flex flex-wrap gap-4">
-                  <input type="text" placeholder="Goal Name" value={goalForm.name} onChange={e => setGoalForm({...goalForm, name: e.target.value})} required className="flex-1 min-w-[160px] px-3 py-2 border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl text-sm" />
-                  <input type="number" placeholder="Target Amount" value={goalForm.target} onChange={e => setGoalForm({...goalForm, target: e.target.value})} required className="w-32 px-3 py-2 border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl text-sm font-bold" />
-                  <input type="number" placeholder="Already Saved" value={goalForm.current} onChange={e => setGoalForm({...goalForm, current: e.target.value})} className="w-32 px-3 py-2 border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl text-sm font-bold" />
+                  <input type="text" placeholder="Goal Name" value={goalForm.name} onChange={e => setGoalForm({...goalForm, name: e.target.value})} required className="flex-1 min-w-[160px] px-3 py-2 border border-slate-300 dk-border-slate-700 bg-slate-50 dk-bg-slate-900 text-slate-900 dk-text-white rounded-xl text-sm" />
+                  <input type="number" placeholder="Target Amount" value={goalForm.target} onChange={e => setGoalForm({...goalForm, target: e.target.value})} required className="w-32 px-3 py-2 border border-slate-300 dk-border-slate-700 bg-slate-50 dk-bg-slate-900 text-slate-900 dk-text-white rounded-xl text-sm font-bold" />
+                  <input type="number" placeholder="Already Saved" value={goalForm.current} onChange={e => setGoalForm({...goalForm, current: e.target.value})} className="w-32 px-3 py-2 border border-slate-300 dk-border-slate-700 bg-slate-50 dk-bg-slate-900 text-slate-900 dk-text-white rounded-xl text-sm font-bold" />
                   <button type="submit" className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl">Add Goal</button>
                </form>
              </div>
+             {goals.length === 0 && (
+               <div className="dark-card bg-white dk-bg-slate-800 rounded-3xl p-10 border border-dashed border-slate-300 dk-border-slate-700 flex flex-col items-center justify-center text-center">
+                 <CheckCircle className="w-10 h-10 text-slate-300 dk-text-slate-400 mb-3" />
+                 <p className="font-semibold text-slate-700 dk-text-slate-300">No savings goals yet</p>
+                 <p className="text-sm text-slate-500 dk-text-slate-400 mt-1">Create your first goal above to track progress.</p>
+               </div>
+             )}
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {goals.map(g => (
-                  <div key={g.id} className="dark-card bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm relative group">
+                  <div key={g.id} className="dark-card bg-white dk-bg-slate-800 p-6 rounded-3xl border border-slate-200 dk-border-slate-700 shadow-sm relative group">
                      <button onClick={() => setGoals(p => p.filter(x => x.id !== g.id))} className="absolute top-4 right-4 text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4"/></button>
-                     <h4 className="font-bold mb-2 text-slate-900 dark:text-slate-100">{g.name}</h4>
-                     <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400 mb-4">{formatMoney(g.current)} <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">/ {formatMoney(g.target)}</span></p>
-                     <div className="h-3 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden mb-2"><div className="h-full bg-indigo-500 rounded-full" style={{width:`${Math.min((g.current/g.target)*100, 100)}%`}}></div></div>
-                     <p className="text-xs text-slate-600 dark:text-slate-400 font-semibold">{(g.current/g.target*100).toFixed(1)}% Completed</p>
+                     <h4 className="font-bold mb-2 text-slate-900 dk-text-slate-100">{g.name}</h4>
+                     <p className="text-2xl font-black text-indigo-600 dk-text-indigo-400 mb-4">{formatMoney(g.current)} <span className="text-sm font-semibold text-slate-500 dk-text-slate-400">/ {formatMoney(g.target)}</span></p>
+                     <div className="h-3 w-full bg-slate-100 dk-bg-slate-700 rounded-full overflow-hidden mb-2"><div className="h-full bg-indigo-500 rounded-full" style={{width:`${Math.min((g.current/g.target)*100, 100)}%`}}></div></div>
+                     <p className="text-xs text-slate-600 dk-text-slate-400 font-semibold">{(g.current/g.target*100).toFixed(1)}% Completed</p>
                   </div>
                 ))}
              </div>
@@ -1067,14 +1166,14 @@ export default function App() {
       {}
       {showApiKeyModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[80] flex items-center justify-center p-4">
-          <div className="dark-card bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md p-8 relative shadow-2xl animate-fade-in-up border border-slate-200 dark:border-slate-800">
-            <button onClick={() => setShowApiKeyModal(false)} className="absolute top-6 right-6 p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 text-slate-700 dark:text-slate-200"><X className="w-5 h-5" /></button>
+          <div className="dark-card bg-white dk-bg-slate-900 rounded-3xl w-full max-w-md p-8 relative shadow-2xl animate-fade-in-up border border-slate-200 dk-border-slate-800">
+            <button onClick={() => setShowApiKeyModal(false)} className="absolute top-6 right-6 p-2 bg-slate-100 dk-bg-slate-800 rounded-full hover:bg-slate-200 dk-hover-bg-slate-700 text-slate-700 dk-text-slate-200 transition-colors"><X className="w-5 h-5" /></button>
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl text-indigo-600"><Key className="w-6 h-6" /></div>
-              <div><h2 className="text-xl font-bold text-slate-900 dark:text-white">API Key</h2><p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Required for Receipt Scanning & Magic Add</p></div>
+              <div className="p-3 bg-indigo-100 dk-bg-indigo-900-30 rounded-2xl text-indigo-600"><Key className="w-6 h-6" /></div>
+              <div><h2 className="text-xl font-bold text-slate-900 dk-text-white">API Key</h2><p className="text-xs text-slate-500 dk-text-slate-400 font-medium">Required for Receipt Scanning & Magic Add</p></div>
             </div>
-            <p className="text-sm text-slate-700 dark:text-slate-300 mb-6 font-medium">Your API key is saved strictly in your browser's local storage and is never sent anywhere else.</p>
-            <input type="password" value={tempApiKey} onChange={e => setTempApiKey(e.target.value)} placeholder="Use your API key..." className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm mb-6 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 font-medium" />
+            <p className="text-sm text-slate-700 dk-text-slate-300 mb-6 font-medium">Your API key is saved strictly in your browser's local storage and is never sent anywhere else.</p>
+            <input type="password" value={tempApiKey} onChange={e => setTempApiKey(e.target.value)} placeholder="Use your API key..." className="w-full px-4 py-3 bg-slate-50 dk-bg-slate-800 border border-slate-300 dk-border-slate-700 rounded-xl text-sm mb-6 text-slate-900 dk-text-white outline-none focus:ring-2 focus:ring-indigo-500 font-medium" />
             <button onClick={saveApiKey} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md">Save API Key</button>
           </div>
         </div>
@@ -1083,16 +1182,16 @@ export default function App() {
       {}
       {isHeatmapOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4" onClick={(e) => e.target === e.currentTarget && setIsHeatmapOpen(false)}>
-          <div className="dark-card bg-white dark:bg-slate-900 rounded-3xl w-full max-w-3xl p-8 relative shadow-2xl animate-fade-in-up max-h-[95vh] overflow-y-auto border border-slate-200 dark:border-slate-800">
-            <button onClick={() => setIsHeatmapOpen(false)} className="absolute top-6 right-6 p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 text-slate-700 dark:text-slate-200"><X className="w-5 h-5" /></button>
-            <h2 className="text-2xl font-bold mb-2 flex items-center gap-3 text-slate-900 dark:text-white"><Calendar className="w-7 h-7 text-indigo-500" /> Daily Spending Heatmap</h2>
-            <p className="text-slate-500 dark:text-slate-400 mb-8 font-medium">Visualize spending intensity for {selectedMonth}.</p>
+          <div className="dark-card bg-white dk-bg-slate-900 rounded-3xl w-full max-w-3xl p-8 relative shadow-2xl animate-fade-in-up max-h-[95vh] overflow-y-auto border border-slate-200 dk-border-slate-800">
+            <button onClick={() => setIsHeatmapOpen(false)} className="absolute top-6 right-6 p-2 bg-slate-100 dk-bg-slate-800 rounded-full hover:bg-slate-200 dk-hover-bg-slate-700 text-slate-700 dk-text-slate-200 transition-colors"><X className="w-5 h-5" /></button>
+            <h2 className="text-2xl font-bold mb-2 flex items-center gap-3 text-slate-900 dk-text-white"><Calendar className="w-7 h-7 text-indigo-500" /> Daily Spending Heatmap</h2>
+            <p className="text-slate-500 dk-text-slate-400 mb-8 font-medium">Visualize spending intensity for {selectedMonth}.</p>
             
             <div className="grid grid-cols-7 gap-2 mb-8 relative">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d} className="text-center text-sm font-bold text-slate-500 dark:text-slate-400 mb-2">{d}</div>)}
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d} className="text-center text-sm font-bold text-slate-500 dk-text-slate-400 mb-2">{d}</div>)}
               {heatmapData.map((d, i) => d.empty ? <div key={i} /> : (
                 <div key={i} className={`relative group aspect-square rounded-2xl ${getHeatmapColor(d.spent)} flex items-center justify-center cursor-pointer transition-all hover:scale-105`}>
-                  <span className={`text-sm ${d.spent > 0 ? 'text-white font-bold' : 'text-slate-500 dark:text-slate-400 font-semibold'}`}>{d.day}</span>
+                  <span className={`text-sm ${d.spent > 0 ? 'text-white font-bold' : 'text-slate-500 dk-text-slate-400 font-semibold'}`}>{d.day}</span>
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-50 shadow-xl border border-slate-700">
                     <span className="opacity-75 mr-2">{d.dateStr}:</span> {formatMoney(d.spent)}
                   </div>
@@ -1100,12 +1199,12 @@ export default function App() {
               ))}
             </div>
 
-            <div className="p-5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700">
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2"><Settings className="w-4 h-4"/> Customize Thresholds</h4>
+            <div className="p-5 bg-slate-50 dk-bg-slate-800-50 rounded-2xl border border-slate-200 dk-border-slate-700">
+              <h4 className="text-sm font-bold text-slate-900 dk-text-white mb-4 flex items-center gap-2"><Settings className="w-4 h-4"/> Customize Thresholds</h4>
               <div className="flex flex-wrap gap-4 items-center">
-                <div className="dark-card flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-2 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700"><div className="w-4 h-4 bg-emerald-400 rounded-full"></div><span className="text-sm text-slate-500">&le;</span><input type="number" value={heatmapThresholds.green} onChange={e => setHeatmapThresholds({...heatmapThresholds, green: Number(e.target.value)})} className="w-20 bg-transparent outline-none font-bold text-slate-900 dark:text-white" /></div>
-                <div className="dark-card flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-2 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700"><div className="w-4 h-4 bg-yellow-400 rounded-full"></div><span className="text-sm text-slate-500">&le;</span><input type="number" value={heatmapThresholds.yellow} onChange={e => setHeatmapThresholds({...heatmapThresholds, yellow: Number(e.target.value)})} className="w-20 bg-transparent outline-none font-bold text-slate-900 dark:text-white" /></div>
-                <div className="dark-card flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-2 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700"><div className="w-4 h-4 bg-orange-400 rounded-full"></div><span className="text-sm text-slate-500">&le;</span><input type="number" value={heatmapThresholds.orange} onChange={e => setHeatmapThresholds({...heatmapThresholds, orange: Number(e.target.value)})} className="w-20 bg-transparent outline-none font-bold text-slate-900 dark:text-white" /></div>
+                <div className="dark-card flex items-center gap-2 bg-white dk-bg-slate-800 px-3 py-2 rounded-xl shadow-sm border border-slate-200 dk-border-slate-700"><div className="w-4 h-4 bg-emerald-400 rounded-full"></div><span className="text-sm text-slate-500">&le;</span><input type="number" value={heatmapThresholds.green} onChange={e => setHeatmapThresholds({...heatmapThresholds, green: Number(e.target.value)})} className="w-20 bg-transparent outline-none font-bold text-slate-900 dk-text-white" /></div>
+                <div className="dark-card flex items-center gap-2 bg-white dk-bg-slate-800 px-3 py-2 rounded-xl shadow-sm border border-slate-200 dk-border-slate-700"><div className="w-4 h-4 bg-yellow-400 rounded-full"></div><span className="text-sm text-slate-500">&le;</span><input type="number" value={heatmapThresholds.yellow} onChange={e => setHeatmapThresholds({...heatmapThresholds, yellow: Number(e.target.value)})} className="w-20 bg-transparent outline-none font-bold text-slate-900 dk-text-white" /></div>
+                <div className="dark-card flex items-center gap-2 bg-white dk-bg-slate-800 px-3 py-2 rounded-xl shadow-sm border border-slate-200 dk-border-slate-700"><div className="w-4 h-4 bg-orange-400 rounded-full"></div><span className="text-sm text-slate-500">&le;</span><input type="number" value={heatmapThresholds.orange} onChange={e => setHeatmapThresholds({...heatmapThresholds, orange: Number(e.target.value)})} className="w-20 bg-transparent outline-none font-bold text-slate-900 dk-text-white" /></div>
               </div>
             </div>
           </div>
@@ -1115,10 +1214,10 @@ export default function App() {
       {}
       {isTrendOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4" onClick={(e) => e.target === e.currentTarget && setIsTrendOpen(false)}>
-          <div className="dark-card bg-white dark:bg-slate-900 rounded-3xl w-full max-w-4xl p-8 relative shadow-2xl animate-fade-in-up border border-slate-200 dark:border-slate-800">
-            <button onClick={() => setIsTrendOpen(false)} className="absolute top-6 right-6 p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 text-slate-700 dark:text-slate-200"><X className="w-5 h-5" /></button>
-            <h2 className="text-2xl font-bold mb-2 flex items-center gap-3 text-slate-900 dark:text-white"><BarChart className="w-7 h-7 text-emerald-500" /> 6-Month Trajectory</h2>
-            <p className="text-slate-500 dark:text-slate-400 mb-12 font-medium">Compare your cash flow and savings over the previous half-year.</p>
+          <div className="dark-card bg-white dk-bg-slate-900 rounded-3xl w-full max-w-4xl p-8 relative shadow-2xl animate-fade-in-up border border-slate-200 dk-border-slate-800">
+            <button onClick={() => setIsTrendOpen(false)} className="absolute top-6 right-6 p-2 bg-slate-100 dk-bg-slate-800 rounded-full hover:bg-slate-200 dk-hover-bg-slate-700 text-slate-700 dk-text-slate-200 transition-colors"><X className="w-5 h-5" /></button>
+            <h2 className="text-2xl font-bold mb-2 flex items-center gap-3 text-slate-900 dk-text-white"><BarChart className="w-7 h-7 text-emerald-500" /> 6-Month Trajectory</h2>
+            <p className="text-slate-500 dk-text-slate-400 mb-12 font-medium">Compare your cash flow and savings over the previous half-year.</p>
 
             <div className="flex items-end justify-between gap-6 h-64 mt-8 px-4">
               {sixMonthTrend.trend.map(t => (
@@ -1134,7 +1233,7 @@ export default function App() {
                     <div className="w-1/2 max-w-[40px] bg-emerald-400 rounded-t-lg transition-all group-hover:brightness-110" style={{ height: `${(t.income / sixMonthTrend.maxVal) * 100}%` }}></div>
                     <div className="w-1/2 max-w-[40px] bg-rose-400 rounded-t-lg transition-all group-hover:brightness-110" style={{ height: `${(t.expense / sixMonthTrend.maxVal) * 100}%` }}></div>
                   </div>
-                  <span className="text-sm font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-4 py-1 rounded-full">{t.month}</span>
+                  <span className="text-sm font-bold text-slate-700 dk-text-slate-300 bg-slate-100 dk-bg-slate-800 px-4 py-1 rounded-full">{t.month}</span>
                 </div>
               ))}
             </div>
@@ -1145,26 +1244,26 @@ export default function App() {
       {}
       {showReport && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
-          <div className="dark-card bg-white dark:bg-slate-900 rounded-3xl w-full max-w-2xl p-8 relative shadow-2xl animate-fade-in-up border border-slate-200 dark:border-slate-800">
-            <button onClick={() => setShowReport(false)} className="absolute top-6 right-6 p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 text-slate-700 dark:text-slate-200"><X className="w-5 h-5" /></button>
-            <h2 className="text-2xl font-bold mb-2 flex items-center gap-3 text-slate-900 dark:text-white"><FileText className="w-7 h-7 text-indigo-500" /> Executive Summary</h2>
+          <div className="dark-card bg-white dk-bg-slate-900 rounded-3xl w-full max-w-2xl p-8 relative shadow-2xl animate-fade-in-up border border-slate-200 dk-border-slate-800">
+            <button onClick={() => setShowReport(false)} className="absolute top-6 right-6 p-2 bg-slate-100 dk-bg-slate-800 rounded-full hover:bg-slate-200 dk-hover-bg-slate-700 text-slate-700 dk-text-slate-200 transition-colors"><X className="w-5 h-5" /></button>
+            <h2 className="text-2xl font-bold mb-2 flex items-center gap-3 text-slate-900 dk-text-white"><FileText className="w-7 h-7 text-indigo-500" /> Executive Summary</h2>
             
             {isReportLoading ? (
-              <div className="flex flex-col items-center justify-center py-12"><Loader2 className="w-12 h-12 text-indigo-500 animate-spin mb-4" /><p className="font-semibold text-slate-600 dark:text-slate-400">AI is analyzing your data...</p></div>
+              <div className="flex flex-col items-center justify-center py-12"><Loader2 className="w-12 h-12 text-indigo-500 animate-spin mb-4" /><p className="font-semibold text-slate-600 dk-text-slate-400">AI is analyzing your data...</p></div>
             ) : (
               <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-700">
-                  <div><span className="text-sm font-bold text-slate-600 dark:text-slate-400">Income</span><p className="text-xl font-extrabold text-emerald-500">{formatMoney(currentMonthData.income)}</p></div>
-                  <div><span className="text-sm font-bold text-slate-600 dark:text-slate-400">Expense</span><p className="text-xl font-extrabold text-rose-500">{formatMoney(currentMonthData.expense)}</p></div>
-                  <div><span className="text-sm font-bold text-slate-600 dark:text-slate-400">Saved</span><p className="text-xl font-extrabold text-indigo-500">{formatMoney(currentMonthData.savings)}</p></div>
-                  <div><span className="text-sm font-bold text-slate-600 dark:text-slate-400">Savings Rate</span><p className="text-xl font-extrabold text-slate-900 dark:text-white">{currentMonthData.income ? ((currentMonthData.savings/currentMonthData.income)*100).toFixed(1) : 0}%</p></div>
+                <div className="grid grid-cols-2 gap-4 bg-slate-50 dk-bg-slate-800-50 p-6 rounded-2xl border border-slate-200 dk-border-slate-700">
+                  <div><span className="text-sm font-bold text-slate-600 dk-text-slate-400">Income</span><p className="text-xl font-extrabold text-emerald-500">{formatMoney(currentMonthData.income)}</p></div>
+                  <div><span className="text-sm font-bold text-slate-600 dk-text-slate-400">Expense</span><p className="text-xl font-extrabold text-rose-500">{formatMoney(currentMonthData.expense)}</p></div>
+                  <div><span className="text-sm font-bold text-slate-600 dk-text-slate-400">Saved</span><p className="text-xl font-extrabold text-indigo-500">{formatMoney(currentMonthData.savings)}</p></div>
+                  <div><span className="text-sm font-bold text-slate-600 dk-text-slate-400">Savings Rate</span><p className="text-xl font-extrabold text-slate-900 dk-text-white">{currentMonthData.income ? ((currentMonthData.savings/currentMonthData.income)*100).toFixed(1) : 0}%</p></div>
                 </div>
                 
-                <div className="p-6 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-200 dark:border-indigo-800/50">
-                  <h3 className="font-bold flex items-center gap-2 mb-4 text-indigo-950 dark:text-indigo-200"><Bot className="w-5 h-5"/> AI Insights</h3>
+                <div className="p-6 bg-indigo-50 dk-bg-indigo-900-20 rounded-2xl border border-indigo-200 dk-border-indigo-800-50">
+                  <h3 className="font-bold flex items-center gap-2 mb-4 text-indigo-950 dk-text-indigo-200"><Bot className="w-5 h-5"/> AI Insights</h3>
                   <div className="space-y-3">
-                    <p className="text-sm text-slate-800 dark:text-slate-200"><strong>Observation:</strong> {reportInsights?.observation}</p>
-                    <p className="text-sm text-slate-800 dark:text-slate-200"><strong>Suggestion:</strong> {reportInsights?.suggestion}</p>
+                    <p className="text-sm text-slate-800 dk-text-slate-200"><strong>Observation:</strong> {reportInsights?.observation}</p>
+                    <p className="text-sm text-slate-800 dk-text-slate-200"><strong>Suggestion:</strong> {reportInsights?.suggestion}</p>
                   </div>
                 </div>
                 
