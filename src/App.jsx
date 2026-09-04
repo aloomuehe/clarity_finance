@@ -170,6 +170,35 @@ const applyTheme = (dark) => {
   root.style.colorScheme = dark ? 'dark' : 'light';
 };
 
+// --- Local persistence helpers (localStorage only, nothing leaves the device) ---
+const LS_PREFIX = 'clarity_';
+
+const loadLS = (key, fallback) => {
+  try {
+    const raw = localStorage.getItem(LS_PREFIX + key);
+    if (raw === null) return fallback;
+    const parsed = JSON.parse(raw);
+    if (parsed === null || parsed === undefined) return fallback;
+    // guard against shape changes between versions
+    if (Array.isArray(fallback) && !Array.isArray(parsed)) return fallback;
+    if (!Array.isArray(fallback) && typeof fallback === 'object' && fallback !== null
+        && (typeof parsed !== 'object' || Array.isArray(parsed))) return fallback;
+    if (typeof fallback === 'number' && typeof parsed !== 'number') return fallback;
+    if (typeof fallback === 'string' && typeof parsed !== 'string') return fallback;
+    return parsed;
+  } catch {
+    return fallback;
+  }
+};
+
+const saveLS = (key, value) => {
+  try {
+    localStorage.setItem(LS_PREFIX + key, JSON.stringify(value));
+  } catch {
+    /* storage full or blocked (private mode) - ignore */
+  }
+};
+
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('clarity_theme');
@@ -186,7 +215,7 @@ export default function App() {
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [tempApiKey, setTempApiKey] = useState('');
 
-  const [transactions, setTransactions] = useState([]);
+  const [transactions, setTransactions] = useState(() => loadLS('transactions', []));
 
   const [formData, setFormData] = useState({ type: 'expense', amount: '', category: 'food', paymentMethod: 'upi', date: '2026-09-02', note: '' });
   const [isSplit, setIsSplit] = useState(false);
@@ -194,26 +223,27 @@ export default function App() {
 
   const [filter, setFilter] = useState('all'); 
   const [searchQuery, setSearchQuery] = useState('');
-  const [currency, setCurrency] = useState('INR');
-  const [selectedMonth, setSelectedMonth] = useState('2026-09');
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [currency, setCurrency] = useState(() => loadLS('currency', 'INR'));
+  const [selectedMonth, setSelectedMonth] = useState(() => loadLS('selected_month', '2026-09'));
+  const [activeTab, setActiveTab] = useState(() => loadLS('active_tab', 'dashboard'));
   
-  const [monthlyTarget, setMonthlyTarget] = useState(0);
-  const [categoryTargets, setCategoryTargets] = useState({});
+  const [monthlyTarget, setMonthlyTarget] = useState(() => loadLS('monthly_target', 0));
+  const [categoryTargets, setCategoryTargets] = useState(() => loadLS('category_targets', {}));
   const [showBudgetSettings, setShowBudgetSettings] = useState(false);
 
   const [expectedIncome] = useState(0);
-  const [recurring, setRecurring] = useState([]);
-  const [planned, setPlanned] = useState([]);
+  const [recurring, setRecurring] = useState(() => loadLS('recurring', []));
+  const [planned, setPlanned] = useState(() => loadLS('planned', []));
   const [recurringForm, setRecurringForm] = useState({ name: '', amount: '', day: '1', category: 'utilities' });
   const [plannedForm, setPlannedForm] = useState({ name: '', amount: '', date: '2026-09-15', category: 'other_expense' });
 
-  const [loans, setLoans] = useState([]);
+  const [loans, setLoans] = useState(() => loadLS('loans', []));
   const [loanForm, setLoanForm] = useState({ type: 'lent', person: '', amount: '', date: '2026-09-02', note: '' });
   const [paymentInputs, setPaymentInputs] = useState({});
 
-  const [goals, setGoals] = useState([]);
+  const [goals, setGoals] = useState(() => loadLS('goals', []));
   const [goalForm, setGoalForm] = useState({ name: '', target: '', current: '' });
+  const [goalInputs, setGoalInputs] = useState({});
 
   const [magicPrompt, setMagicPrompt] = useState('');
   const [isMagicLoading, setIsMagicLoading] = useState(false);
@@ -231,12 +261,25 @@ export default function App() {
   const [isTrendOpen, setIsTrendOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [calendarYear, setCalendarYear] = useState(parseInt(selectedMonth.split('-')[0], 10));
-  const [heatmapThresholds, setHeatmapThresholds] = useState({ green: 50, yellow: 150, orange: 300 });
+  const [heatmapThresholds, setHeatmapThresholds] = useState(() => loadLS('heatmap_thresholds', { green: 50, yellow: 150, orange: 300 }));
 
   useEffect(() => {
     applyTheme(isDarkMode);
     localStorage.setItem('clarity_theme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
+
+  // --- Auto-save everything locally on change ---
+  useEffect(() => { saveLS('transactions', transactions); }, [transactions]);
+  useEffect(() => { saveLS('recurring', recurring); }, [recurring]);
+  useEffect(() => { saveLS('planned', planned); }, [planned]);
+  useEffect(() => { saveLS('loans', loans); }, [loans]);
+  useEffect(() => { saveLS('goals', goals); }, [goals]);
+  useEffect(() => { saveLS('monthly_target', monthlyTarget); }, [monthlyTarget]);
+  useEffect(() => { saveLS('category_targets', categoryTargets); }, [categoryTargets]);
+  useEffect(() => { saveLS('heatmap_thresholds', heatmapThresholds); }, [heatmapThresholds]);
+  useEffect(() => { saveLS('currency', currency); }, [currency]);
+  useEffect(() => { saveLS('selected_month', selectedMonth); }, [selectedMonth]);
+  useEffect(() => { saveLS('active_tab', activeTab); }, [activeTab]);
 
   const toggleDarkMode = () => {
     setIsDarkMode(prev => !prev);
@@ -530,6 +573,25 @@ export default function App() {
     if (!loanForm.amount || !loanForm.person) return;
     setLoans(prev => [{ id: Date.now().toString(), ...loanForm, amount: Number(loanForm.amount), amountPaid: 0 }, ...prev]);
     setLoanForm({ type: 'lent', person: '', amount: '', date: '2026-09-02', note: '' });
+  };
+
+  const addGoalContribution = (id, direction = 1) => {
+    const raw = Number(goalInputs[id]);
+    if (!raw || raw <= 0) return;
+    const delta = raw * direction;
+    setGoals(prev => prev.map(g => {
+      if (g.id !== id) return g;
+      const next = Math.max(0, Math.min(g.target, g.current + delta));
+      return { ...g, current: next };
+    }));
+    setGoalInputs(prev => ({ ...prev, [id]: '' }));
+    const goal = goals.find(g => g.id === id);
+    setToast({
+      message: direction > 0
+        ? `Added ${formatMoney(raw)} to ${goal ? goal.name : 'goal'}`
+        : `Removed ${formatMoney(raw)} from ${goal ? goal.name : 'goal'}`
+    });
+    setTimeout(() => setToast(null), 3000);
   };
 
   const recordLoanPayment = (id) => {
@@ -1123,15 +1185,56 @@ export default function App() {
                </div>
              )}
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {goals.map(g => (
-                  <div key={g.id} className="dark-card bg-white dk-bg-slate-800 p-6 rounded-3xl border border-slate-200 dk-border-slate-700 shadow-sm relative group">
-                     <button onClick={() => setGoals(p => p.filter(x => x.id !== g.id))} className="absolute top-4 right-4 text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4"/></button>
-                     <h4 className="font-bold mb-2 text-slate-900 dk-text-slate-100">{g.name}</h4>
+                {goals.map(g => {
+                  const remaining = Math.max(0, g.target - g.current);
+                  const pct = g.target > 0 ? Math.min((g.current / g.target) * 100, 100) : 0;
+                  const isDone = remaining === 0 && g.target > 0;
+                  return (
+                  <div key={g.id} className="dark-card bg-white dk-bg-slate-800 p-6 rounded-3xl border border-slate-200 dk-border-slate-700 shadow-sm relative group flex flex-col">
+                     <button onClick={() => setGoals(p => p.filter(x => x.id !== g.id))} className="absolute top-4 right-4 text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 className="w-4 h-4"/></button>
+                     <h4 className="font-bold mb-2 text-slate-900 dk-text-slate-100 pr-8">{g.name}</h4>
                      <p className="text-2xl font-black text-indigo-600 dk-text-indigo-400 mb-4">{formatMoney(g.current)} <span className="text-sm font-semibold text-slate-500 dk-text-slate-400">/ {formatMoney(g.target)}</span></p>
-                     <div className="h-3 w-full bg-slate-100 dk-bg-slate-700 rounded-full overflow-hidden mb-2"><div className="h-full bg-indigo-500 rounded-full" style={{width:`${Math.min((g.current/g.target)*100, 100)}%`}}></div></div>
-                     <p className="text-xs text-slate-600 dk-text-slate-400 font-semibold">{(g.current/g.target*100).toFixed(1)}% Completed</p>
+                     <div className="h-3 w-full bg-slate-100 dk-bg-slate-700 rounded-full overflow-hidden mb-2"><div className={`h-full rounded-full transition-all duration-500 ${isDone ? 'bg-emerald-500' : 'bg-indigo-500'}`} style={{width:`${pct}%`}}></div></div>
+
+                     {}
+                     <div className="flex items-baseline justify-between gap-2 mb-4">
+                       <p className="text-xs text-slate-600 dk-text-slate-400 font-semibold">{pct.toFixed(1)}% Completed</p>
+                       {isDone ? (
+                         <p className="text-xs font-bold text-emerald-600 dk-text-emerald-400 flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> Goal reached</p>
+                       ) : (
+                         <p className="text-xs font-bold text-slate-500 dk-text-slate-400 text-right">
+                           <span className="text-amber-600 dk-text-amber-400">{formatMoney(remaining)}</span> left
+                         </p>
+                       )}
+                     </div>
+
+                     {}
+                     <div className="mt-auto flex gap-2">
+                       <input
+                         type="number"
+                         min="0"
+                         value={goalInputs[g.id] || ''}
+                         onChange={e => setGoalInputs({ ...goalInputs, [g.id]: e.target.value })}
+                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addGoalContribution(g.id, 1); } }}
+                         placeholder="Add amount"
+                         className="flex-1 min-w-0 px-3 py-2 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-700 rounded-xl text-sm text-slate-900 dk-text-white font-bold"
+                       />
+                       <button
+                         type="button"
+                         onClick={() => addGoalContribution(g.id, -1)}
+                         title="Remove this amount"
+                         className="px-3 py-2 bg-slate-100 dk-bg-slate-700 hover:bg-slate-200 dk-hover-bg-slate-600 text-slate-600 dk-text-slate-300 font-bold rounded-xl transition-colors"
+                       >&minus;</button>
+                       <button
+                         type="button"
+                         onClick={() => addGoalContribution(g.id, 1)}
+                         title="Add this amount"
+                         className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center justify-center transition-colors"
+                       ><Plus className="w-4 h-4" /></button>
+                     </div>
                   </div>
-                ))}
+                  );
+                })}
              </div>
           </div>
         )}
