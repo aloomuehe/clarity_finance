@@ -1,4 +1,4 @@
-import { getTodayStr, sanitizeDate, shiftDate } from './dates';
+import { getMonthString, getTodayStr, monthLabel, sanitizeDate, shiftDate, shiftMonth } from './dates';
 import { loadLS } from './storage';
 
 export const DEFAULT_HEATMAP_THRESHOLDS = { green: 50, yellow: 150, orange: 300 };
@@ -17,6 +17,148 @@ export const loadHeatmapThresholds = () => {
     return { green: values[0], yellow: values[1], orange: values[2] };
   }
   return DEFAULT_HEATMAP_THRESHOLDS;
+};
+
+const emptyMonthData = () => ({ income: 0, expense: 0, savings: 0, categorySpending: {} });
+
+export const aggregateMonthlyData = (transactions) => {
+  const dataByMonth = {};
+  transactions.forEach(t => {
+    const month = typeof t.date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(t.date)
+      ? t.date.slice(0, 7)
+      : getMonthString(t.date);
+    if (!dataByMonth[month]) dataByMonth[month] = emptyMonthData();
+    if (t.type === 'income') dataByMonth[month].income += t.amount;
+    else {
+      dataByMonth[month].expense += t.amount;
+      dataByMonth[month].categorySpending[t.category] = (dataByMonth[month].categorySpending[t.category] || 0) + t.amount;
+    }
+    dataByMonth[month].savings = dataByMonth[month].income - dataByMonth[month].expense;
+  });
+  return dataByMonth;
+};
+
+export const getMonthData = (monthlyData, selectedMonth) => {
+  const current = monthlyData[selectedMonth] || emptyMonthData();
+  const previous = monthlyData[shiftMonth(selectedMonth, -1)] || emptyMonthData();
+  let maxSavings = -Infinity;
+  let bestMonth = null;
+  Object.entries(monthlyData).forEach(([month, data]) => {
+    if (data.savings > maxSavings) { maxSavings = data.savings; bestMonth = month; }
+  });
+  return { currentMonthData: current, previousMonthData: previous, highestSavingsMonth: bestMonth ? { month: bestMonth, savings: maxSavings } : null };
+};
+
+export const calculateBalance = (transactions) => transactions.reduce((acc, curr) => {
+  if (curr.type === 'income') { acc.totalIncome += curr.amount; acc.balance += curr.amount; }
+  else { acc.totalExpense += curr.amount; acc.balance -= curr.amount; }
+  return acc;
+}, { totalIncome: 0, totalExpense: 0, balance: 0 });
+
+export const filterTransactions = (transactions, selectedMonth, filter, searchQuery, incomeSources, expenseCategories) => {
+  let result = transactions.filter(t => (
+    typeof t.date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(t.date)
+      ? t.date.slice(0, 7) === selectedMonth
+      : getMonthString(t.date) === selectedMonth
+  ));
+  if (filter !== 'all') result = result.filter(t => t.type === filter);
+  if (searchQuery.trim()) {
+    const query = searchQuery.toLowerCase().trim();
+    result = result.filter(t => {
+      const matchAmountGreater = query.match(/^>(\d+)/) || query.match(/^(\d+)\+$/);
+      if (matchAmountGreater) return t.amount >= Number(matchAmountGreater[1] || matchAmountGreater[2]);
+      const matchAmountLess = query.match(/^<(\d+)/);
+      if (matchAmountLess) return t.amount <= Number(matchAmountLess[1]);
+      const catLabel = (t.type === 'income' ? incomeSources : expenseCategories).find(c => c.id === t.category)?.label.toLowerCase() || '';
+      return (t.note && t.note.toLowerCase().includes(query)) || catLabel.includes(query) || t.amount.toString().includes(query);
+    });
+  }
+  return result.sort((a, b) => new Date(b.date) - new Date(a.date));
+};
+
+export const calculateExpensesByCategory = (displayTransactions, currentExpense, expenseCategories) => {
+  const grouped = displayTransactions.filter(t => t.type === 'expense').reduce((acc, curr) => {
+    acc[curr.category] = (acc[curr.category] || 0) + curr.amount;
+    return acc;
+  }, {});
+  return Object.entries(grouped).map(([id, amount]) => {
+    const cat = expenseCategories.find(c => c.id === id);
+    return { ...cat, amount, percentage: currentExpense > 0 ? (amount / currentExpense) * 100 : 0 };
+  }).sort((a, b) => b.amount - a.amount);
+};
+
+export const generateHeatmapData = (transactions, selectedMonth) => {
+  const year = parseInt(selectedMonth.split('-')[0], 10);
+  const month = parseInt(selectedMonth.split('-')[1], 10) - 1;
+  const days = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay();
+  const data = [];
+  for (let i = 0; i < firstDay; i++) data.push({ empty: true, id: `empty-${i}` });
+  for (let i = 1; i <= days; i++) {
+    const dateStr = `${selectedMonth}-${i.toString().padStart(2, '0')}`;
+    const spent = transactions.filter(t => t.type === 'expense' && getMonthString(t.date) === selectedMonth && String(t.date).slice(8, 10) === String(i).padStart(2, '0')).reduce((sum, t) => sum + t.amount, 0);
+    data.push({ day: i, dateStr, spent, empty: false });
+  }
+  return data;
+};
+
+export const calculateSixMonthTrend = (monthlyData, selectedMonth) => {
+  const liveMonth = getTodayStr().slice(0, 7);
+  const knownMonths = Object.keys(monthlyData).sort();
+  const closingBalanceAt = (month) => knownMonths.filter(item => item <= month).reduce((sum, item) => sum + monthlyData[item].savings, 0);
+  const trend = [];
+  for (let i = 5; i >= 0; i--) {
+    const month = shiftMonth(selectedMonth, -i);
+    const data = monthlyData[month] || emptyMonthData();
+    const closing = closingBalanceAt(month);
+    trend.push({ month: monthLabel(month, { month: 'short' }), key: month, income: data.income, expense: data.expense, saved: data.income - data.expense, openingBalance: closing - (data.income - data.expense), closingBalance: closing, isLive: month === liveMonth });
+  }
+  const maxVal = Math.max(...trend.flatMap(t => [t.income, t.expense]), 1);
+  const toPoints = key => trend.map((t, i) => `${((i + 0.5) / trend.length) * 100},${100 - (t[key] / maxVal) * 100}`).join(' ');
+  return { trend, maxVal, incomeLine: toPoints('income'), expenseLine: toPoints('expense'), axisTicks: [1, 0.75, 0.5, 0.25, 0].map(f => maxVal * f) };
+};
+
+export const calculateFinancialHealth = (currentMonthData, monthlyTarget, recurring, loans, goals) => {
+  let score = 0;
+  const breakdown = [];
+  const savingsRateVal = currentMonthData.income > 0 ? (currentMonthData.savings / currentMonthData.income) : 0;
+  if (savingsRateVal >= 0.2) { score += 30; breakdown.push("Excellent savings rate (>= 20%)"); }
+  else if (savingsRateVal > 0) { score += 15; breakdown.push("Positive savings rate, but under 20%"); }
+  else breakdown.push("No savings generated this month");
+  if (monthlyTarget > 0) {
+    if (currentMonthData.expense <= monthlyTarget) { score += 30; breakdown.push("Spending within overall budget target"); }
+    else { score += 10; breakdown.push("Spending exceeded budget target"); }
+  } else { score += 20; breakdown.push("No strict budget target set"); }
+  const recurringTotal = recurring.reduce((sum, r) => sum + r.amount, 0);
+  if (currentMonthData.income > 0 && (recurringTotal / currentMonthData.income) <= 0.3) { score += 15; breakdown.push("Fixed costs comfortably low (< 30% income)"); }
+  else { score += 5; breakdown.push("High fixed costs burden"); }
+  const borrowedDebt = loans.filter(l => l.type === 'borrowed').reduce((acc, l) => acc + (l.amount - l.amountPaid), 0);
+  if (borrowedDebt === 0) { score += 15; breakdown.push("No outstanding borrowed debt"); }
+  else breakdown.push("Carrying borrowed debt");
+  const hasEmergency = goals.some(g => g.name.toLowerCase().includes('emergency') && g.current > 0);
+  if (hasEmergency) { score += 10; breakdown.push("Active emergency fund"); }
+  else breakdown.push("No emergency fund tracking");
+  const message = score >= 80 ? "Great financial shape! Strong savings and budgeting." : score >= 60 ? "Good standing. Room to optimize fixed costs." : "Needs attention. Focus on an emergency fund and budget limits.";
+  return { score, breakdown, message };
+};
+
+export const calculateProjections = (recurring, planned, transactions, balance, currentMonthData, selectedMonth) => {
+  const todayStr = getTodayStr();
+  const currentMonth = todayStr.slice(0, 7);
+  const isCurrentForecastMonth = selectedMonth === currentMonth;
+  const todayDay = Number(todayStr.slice(8, 10));
+  const daysInCurrentMonth = new Date(Number(todayStr.slice(0, 4)), Number(todayStr.slice(5, 7)), 0).getDate();
+  const monthEndStr = `${currentMonth}-${String(daysInCurrentMonth).padStart(2, '0')}`;
+  const matchedRecurringTransactions = new Set();
+  const upcomingRecurringTotal = isCurrentForecastMonth ? recurring.reduce((sum, item) => {
+    const dueDay = Math.min(Math.max(Number(item.day) || 1, 1), daysInCurrentMonth);
+    if (dueDay < todayDay) return sum;
+    const recordedTransaction = transactions.find(transaction => !matchedRecurringTransactions.has(transaction.id) && transaction.type === 'expense' && getMonthString(transaction.date) === currentMonth && Number(transaction.date.slice(8, 10)) === dueDay && transaction.category === item.category && Number(transaction.amount) === Number(item.amount));
+    if (recordedTransaction) { matchedRecurringTransactions.add(recordedTransaction.id); return sum; }
+    return sum + Number(item.amount);
+  }, 0) : 0;
+  const upcomingPlannedTotal = isCurrentForecastMonth ? planned.filter(item => item.date >= todayStr && item.date <= monthEndStr).reduce((sum, item) => sum + Number(item.amount), 0) : 0;
+  return { upcomingRecurringTotal, projectedBalance: balance - upcomingRecurringTotal - upcomingPlannedTotal, projectedSavings: currentMonthData.income - currentMonthData.expense - upcomingRecurringTotal - upcomingPlannedTotal };
 };
 
 // --- Offline quick-entry parser (works even with no API key / API failure) ---
@@ -131,3 +273,105 @@ export const parseQuickEntry = (input, todayStr = getTodayStr()) => {
 
   return { type, amount, category, paymentMethod, date, note };
 };
+
+export const calculateWarnings = (currentMonthData, monthlyTarget, categoryTargets, currency, expenseCategories) => {
+  const alerts = [];
+  const expense = currentMonthData?.expense || 0;
+
+  if (monthlyTarget > 0) {
+    const overallPct = (expense / monthlyTarget) * 100;
+    if (overallPct >= 100) {
+      alerts.push({
+        type: 'danger',
+        icon: '🚨',
+        text: `You have exceeded your overall budget by ${new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(expense - monthlyTarget)}!`,
+      });
+    } else if (overallPct >= 80) {
+      alerts.push({
+        type: 'warning',
+        icon: '⚠️',
+        text: `Overall budget ${overallPct.toFixed(0)}% used. Only ${new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(monthlyTarget - expense)} remaining.`,
+      });
+    }
+  }
+
+  Object.entries(categoryTargets || {}).forEach(([catId, limit]) => {
+    const spent = currentMonthData?.categorySpending?.[catId] || 0;
+    const catLabel = expenseCategories.find(c => c.id === catId)?.label || catId;
+    if (spent > limit) {
+      alerts.push({
+        type: 'danger',
+        icon: '🚨',
+        text: `You've overspent on ${catLabel} by ${new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(spent - limit)}.`,
+      });
+    } else if (limit > 0 && (spent / limit) >= 0.8) {
+      alerts.push({
+        type: 'warning',
+        icon: '⚠️',
+        text: `${catLabel} budget is ${((spent / limit) * 100).toFixed(0)}% used.`,
+      });
+    }
+  });
+
+  return alerts;
+};
+
+export const calculateNoSpendStreak = (transactions) => {
+  const expenseList = (transactions || []).filter(t => t.type === 'expense' && !Number.isNaN(new Date(t.date).getTime()));
+  if (expenseList.length === 0) return 0;
+  let streak = 0;
+  let d = new Date(getTodayStr());
+  d.setHours(0, 0, 0, 0);
+  const expenseDates = new Set(expenseList.map(t => new Date(t.date).toISOString().split('T')[0]));
+  while (streak < 365) {
+    const dateStr = d.toISOString().split('T')[0];
+    if (!expenseDates.has(dateStr)) {
+      streak++;
+      d.setDate(d.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  return streak;
+};
+
+export const calculateFrequentCategory = (displayTransactions, expenseCategories) => {
+  const counts = {};
+  (displayTransactions || []).filter(t => t.type === 'expense').forEach(t => {
+    counts[t.category] = (counts[t.category] || 0) + 1;
+  });
+  let maxCat = null;
+  let maxCount = 0;
+  Object.entries(counts).forEach(([cat, count]) => {
+    if (count > maxCount) {
+      maxCount = count;
+      maxCat = cat;
+    }
+  });
+  if (maxCount >= 1 && maxCat) {
+    const label = expenseCategories.find(c => c.id === maxCat)?.label || maxCat;
+    return { label, count: maxCount };
+  }
+  return null;
+};
+
+export const calculateElapsedDays = (selectedMonth) => {
+  const today = getTodayStr();
+  const [year, month] = selectedMonth.split('-').map(Number);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  if (selectedMonth === today.slice(0, 7)) return Math.max(1, Number(today.slice(8, 10)));
+  if (selectedMonth > today.slice(0, 7)) return 1;
+  return daysInMonth;
+};
+
+export const calculateDaysRemainingInfo = (selectedMonth) => {
+  const today = getTodayStr();
+  const currentMonth = today.slice(0, 7);
+  const [year, month] = selectedMonth.split('-').map(Number);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  if (selectedMonth === currentMonth) {
+    return { label: `${Math.max(0, daysInMonth - Number(today.slice(8, 10)))} Days`, isCurrent: true };
+  }
+  return { label: selectedMonth > currentMonth ? 'Future Month' : 'Past Month', isCurrent: false };
+};
+
