@@ -1,5 +1,5 @@
-import { callGeminiJSON } from './gemini';
-import { getMonthString } from '../utils/dates';
+import { callGeminiJSON } from './gemini.js';
+import { getMonthString } from '../utils/dates.js';
 
 export const buildMonthSummary = ({
   transactions,
@@ -72,7 +72,7 @@ export const buildMonthSummary = ({
       expense: Math.round(previousMonthData.expense),
       savings: Math.round(previousMonthData.savings),
     },
-    monthlyExpenseTarget: Number(monthlyTarget) || 0,
+    monthlySavingsTarget: Number(monthlyTarget) || 0,
     averageDailySpend: Math.round(dailyAverage),
     topCategories,
     largestExpenses: largest,
@@ -97,10 +97,11 @@ export const buildLocalInsights = (s, formatMoney) => {
       ? `You spent ${formatMoney(Math.abs(prevDelta))} more than last month.`
       : `You spent ${formatMoney(Math.abs(prevDelta))} less than last month.`);
   }
-  if (s.monthlyExpenseTarget > 0) {
-    highlights.push(s.expense > s.monthlyExpenseTarget
-      ? `Over your ${formatMoney(s.monthlyExpenseTarget)} target by ${formatMoney(s.expense - s.monthlyExpenseTarget)}.`
-      : `${formatMoney(s.monthlyExpenseTarget - s.expense)} still left in your monthly target.`);
+  const savingsTarget = s.monthlySavingsTarget ?? 0;
+  if (savingsTarget > 0) {
+    highlights.push(s.savings >= savingsTarget
+      ? `Achieved your ${formatMoney(savingsTarget)} monthly savings target (${formatMoney(s.savings - savingsTarget)} above target).`
+      : `${formatMoney(savingsTarget - s.savings)} behind your ${formatMoney(savingsTarget)} monthly savings target.`);
   }
   if (s.largestExpenses[0]) highlights.push(`Largest single expense: ${s.largestExpenses[0].note} at ${formatMoney(s.largestExpenses[0].amount)}.`);
   if (s.outstandingBorrowed > 0) highlights.push(`You still owe ${formatMoney(s.outstandingBorrowed)} across borrowed loans.`);
@@ -111,7 +112,7 @@ export const buildLocalInsights = (s, formatMoney) => {
 
   const suggestion = top
     ? `Trim ${top.category} by about 15% (roughly ${formatMoney(Math.round(top.amount * 0.15))}) and set that as a category budget - it is the single fastest way to lift your savings rate.`
-    : 'Start by setting a monthly expense target so future reports can measure you against it.';
+    : 'Start by setting a monthly savings target so future reports can measure your progress against it.';
 
   return { observation, suggestion, highlights };
 };

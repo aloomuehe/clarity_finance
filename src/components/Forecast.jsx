@@ -22,8 +22,8 @@ export default function Forecast({
   return (
     <div className="animate-fade-in-up space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-800 rounded-3xl p-6 text-white shadow-lg"><h2 className="text-sm font-semibold text-blue-100 mb-1">Projected End-of-Month Balance</h2><p className="text-4xl font-extrabold">{formatMoney(projections.projectedBalance)}</p><p className="text-xs text-blue-100 mt-2">Current balance minus unpaid recurring and planned expenses due this month.</p></div>
-        <div className="bg-gradient-to-br from-emerald-500 to-teal-700 rounded-3xl p-6 text-white shadow-lg"><h2 className="text-sm font-semibold text-emerald-100 mb-1">Projected Monthly Savings</h2><p className="text-4xl font-extrabold">{formatMoney(projections.projectedSavings)}</p><p className="text-xs text-emerald-100 mt-2">Uses recorded income and expenses; no expected income is assumed.</p></div>
+        <div className="bg-blue-600 bg-gradient-to-br from-blue-600 to-indigo-800 rounded-3xl p-6 text-white shadow-lg"><h2 className="text-sm font-semibold text-white/90 mb-1">Projected End-of-Month Balance</h2><p className="text-4xl font-extrabold text-white">{formatMoney(projections.projectedBalance)}</p><p className="text-xs text-white/70 mt-2">Current balance minus unpaid recurring and planned expenses due this month.</p></div>
+        <div className="bg-emerald-600 bg-gradient-to-br from-emerald-500 to-teal-700 rounded-3xl p-6 text-white shadow-lg"><h2 className="text-sm font-semibold text-white/90 mb-1">Projected Monthly Savings</h2><p className="text-4xl font-extrabold text-white">{formatMoney(projections.projectedSavings)}</p><p className="text-xs text-white/70 mt-2">Uses recorded income and expenses; no expected income is assumed.</p></div>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="dark-card bg-white dk-bg-slate-800 rounded-3xl p-6 border border-slate-200 dk-border-slate-700 shadow-sm flex flex-col">

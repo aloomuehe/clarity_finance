@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { CheckCircle, Plus, Trash2 } from 'lucide-react';
 
 export default function Goals({
@@ -12,6 +13,20 @@ export default function Goals({
   deleteWithUndo,
   setGoals,
 }) {
+  const [goalFilter, setGoalFilter] = useState('active'); // 'active' | 'completed'
+
+  const isGoalCompleted = (g) => Number(g.target) > 0 && Number(g.current) >= Number(g.target);
+
+  const activeGoals = (goals || []).filter(g => !isGoalCompleted(g));
+  const completedGoals = (goals || []).filter(isGoalCompleted);
+
+  const displayedGoals = goalFilter === 'completed' ? completedGoals : activeGoals;
+
+  const emptyMessage = goalFilter === 'completed' ? 'No completed savings goals yet.' : 'No active savings goals.';
+  const emptySubtitle = goalFilter === 'completed'
+    ? 'Goals will appear here once you reach your target amount.'
+    : 'Create your first goal above to track progress.';
+
   return (
     <div className="animate-fade-in-up space-y-6">
       <div className="dark-card bg-white dk-bg-slate-800 rounded-3xl p-6 border border-slate-200 dk-border-slate-700 shadow-sm">
@@ -23,15 +38,43 @@ export default function Goals({
           <button type="submit" className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl">Add Goal</button>
         </form>
       </div>
-      {goals.length === 0 && (
+
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex bg-slate-100 dk-bg-slate-900 p-1 rounded-xl border border-slate-200 dk-border-slate-700 w-fit">
+          <button
+            type="button"
+            onClick={() => setGoalFilter('active')}
+            className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+              goalFilter === 'active'
+                ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-400 shadow-sm'
+                : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-white'
+            }`}
+          >
+            Active
+          </button>
+          <button
+            type="button"
+            onClick={() => setGoalFilter('completed')}
+            className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+              goalFilter === 'completed'
+                ? 'bg-white dk-bg-slate-700 text-emerald-600 dk-text-emerald-400 shadow-sm'
+                : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-white'
+            }`}
+          >
+            Completed
+          </button>
+        </div>
+      </div>
+
+      {displayedGoals.length === 0 ? (
         <div className="dark-card bg-white dk-bg-slate-800 rounded-3xl p-10 border border-dashed border-slate-300 dk-border-slate-700 flex flex-col items-center justify-center text-center">
           <CheckCircle className="w-10 h-10 text-slate-300 dk-text-slate-400 mb-3" />
-          <p className="font-semibold text-slate-700 dk-text-slate-300">No savings goals yet</p>
-          <p className="text-sm text-slate-500 dk-text-slate-400 mt-1">Create your first goal above to track progress.</p>
+          <p className="font-semibold text-slate-700 dk-text-slate-300">{emptyMessage}</p>
+          <p className="text-sm text-slate-500 dk-text-slate-400 mt-1">{emptySubtitle}</p>
         </div>
-      )}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {goals.map(g => {
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {displayedGoals.map(g => {
           const remaining = Math.max(0, g.target - g.current);
           const pct = g.target > 0 ? Math.min((g.current / g.target) * 100, 100) : 0;
           const isDone = remaining === 0 && g.target > 0;
@@ -58,6 +101,7 @@ export default function Goals({
           );
         })}
       </div>
+      )}
     </div>
   );
 }

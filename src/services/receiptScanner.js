@@ -1,5 +1,5 @@
-import { callGeminiJSON } from './gemini';
-import { sanitizeDate } from '../utils/dates';
+import { callGeminiJSON } from './gemini.js';
+import { sanitizeDate } from '../utils/dates.js';
 
 export async function scanReceipt(file, apiKey, today, expenseCategories) {
   return new Promise((resolve) => {

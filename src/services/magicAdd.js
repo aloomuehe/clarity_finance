@@ -1,6 +1,6 @@
-import { callGeminiJSON } from './gemini';
-import { parseQuickEntry } from '../utils/calculations';
-import { sanitizeDate } from '../utils/dates';
+import { callGeminiJSON } from './gemini.js';
+import { parseQuickEntry } from '../utils/calculations.js';
+import { sanitizeDate } from '../utils/dates.js';
 
 export async function processMagicAdd({
   prompt,

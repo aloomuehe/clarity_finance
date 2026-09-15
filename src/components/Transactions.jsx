@@ -1,9 +1,11 @@
-import { ArrowRightLeft, CreditCard, Edit2, Search, Trash2 } from 'lucide-react';
+import { ArrowRightLeft, ChevronLeft, ChevronRight, CreditCard, Edit2, Search, Trash2 } from 'lucide-react';
+import { shiftMonth } from '../utils/dates.js';
 
 export default function Transactions({
   formatMoney,
   monthLabel,
   selectedMonth,
+  onSelectMonth,
   displayTransactions,
   currentMonthData,
   searchQuery,
@@ -25,10 +27,63 @@ export default function Transactions({
           </div>
           <div className="text-right shrink-0"><p className="text-[11px] font-bold uppercase tracking-wide text-slate-500 dk-text-slate-400">Total spent</p><p className="text-2xl font-extrabold text-rose-500 leading-tight">{formatMoney(currentMonthData.expense)}</p><p className="text-[11px] font-semibold text-emerald-600 dk-text-emerald-300">+{formatMoney(currentMonthData.income)} in</p></div>
         </div>
-        <div className="flex flex-wrap justify-end items-center mb-6 gap-4">
+        <div className="flex flex-wrap justify-between items-center mb-6 gap-3">
+          {/* Month Navigation */}
+          <div className="flex items-center bg-slate-100 dk-bg-slate-900 p-1 rounded-xl border border-slate-200 dk-border-slate-700">
+            <button
+              type="button"
+              onClick={() => onSelectMonth && onSelectMonth(shiftMonth(selectedMonth, -1))}
+              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg text-slate-600 dk-text-slate-300 hover:bg-white dk-hover-bg-slate-700 hover:text-indigo-600 dk-hover-text-indigo-400 hover:shadow-sm transition-all"
+              title="Previous Month"
+              aria-label="Previous Month"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Previous Month</span>
+            </button>
+            <span className="px-3 py-1.5 text-xs font-bold text-slate-900 dk-text-white text-center whitespace-nowrap">
+              {monthLabel(selectedMonth)}
+            </span>
+            <button
+              type="button"
+              onClick={() => onSelectMonth && onSelectMonth(shiftMonth(selectedMonth, 1))}
+              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg text-slate-600 dk-text-slate-300 hover:bg-white dk-hover-bg-slate-700 hover:text-indigo-600 dk-hover-text-indigo-400 hover:shadow-sm transition-all"
+              title="Next Month"
+              aria-label="Next Month"
+            >
+              <span className="hidden sm:inline">Next Month</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Search & Category Type Filters */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className="relative"><span className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400"><Search className="w-3.5 h-3.5" /></span><input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-40 pl-8 pr-2 py-1.5 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-700 rounded-lg text-xs text-slate-900 dk-text-white font-medium outline-none" /></div>
-            <div className="flex bg-slate-100 dk-bg-slate-900 p-1 rounded-xl">{['all', 'income', 'expense'].map((f) => <button key={f} onClick={() => setFilter(f)} className={`px-2.5 py-1 text-xs font-bold rounded-lg capitalize ${filter === f ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-300 shadow-sm' : 'text-slate-500 dk-text-slate-400'}`}>{f}</button>)}</div>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400">
+                <Search className="w-3.5 h-3.5" />
+              </span>
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-36 sm:w-40 pl-8 pr-2 py-1.5 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-700 rounded-lg text-xs text-slate-900 dk-text-white font-medium outline-none"
+              />
+            </div>
+            <div className="flex bg-slate-100 dk-bg-slate-900 p-1 rounded-xl">
+              {['all', 'income', 'expense'].map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-2.5 py-1 text-xs font-bold rounded-lg capitalize ${
+                    filter === f
+                      ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-300 shadow-sm'
+                      : 'text-slate-500 dk-text-slate-400'
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto space-y-3">

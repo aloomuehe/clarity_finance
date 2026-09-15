@@ -1,4 +1,4 @@
-import { Edit2, Plus, Share2, DollarSign } from 'lucide-react';
+import { Edit2, Plus, Share2, DollarSign, Layers } from 'lucide-react';
 
 export default function TransactionForm({
   formData,
@@ -13,13 +13,26 @@ export default function TransactionForm({
   incomeSources,
   paymentMethods,
   CurrencyIcon = DollarSign,
+  onBulkAdd,
 }) {
   return (
     <div className="dark-card bg-white dk-bg-slate-800 rounded-3xl p-6 border border-slate-200 dk-border-slate-700 shadow-sm">
-      <h3 className="text-lg font-bold mb-6 flex items-center gap-2 text-slate-900 dk-text-white">
-        {editingId ? <Edit2 className="w-5 h-5 text-indigo-500" /> : <Plus className="w-5 h-5 text-indigo-500" />}
-        {editingId ? 'Edit Transaction' : 'Manual Entry'}
-      </h3>
+      <div className="flex items-center justify-between gap-2 mb-6 flex-wrap">
+        <h3 className="text-lg font-bold flex items-center gap-2 text-slate-900 dk-text-white">
+          {editingId ? <Edit2 className="w-5 h-5 text-indigo-500" /> : <Plus className="w-5 h-5 text-indigo-500" />}
+          {editingId ? 'Edit Transaction' : 'Manual Entry'}
+        </h3>
+        {!editingId && (
+          <button
+            type="button"
+            onClick={onBulkAdd}
+            className="px-3 py-1.5 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dk-bg-slate-700 dk-hover-bg-slate-600 text-slate-700 hover:text-slate-900 dk-text-slate-200 dk-hover-text-white transition-colors flex items-center gap-1.5 shadow-sm"
+          >
+            <Layers className="w-3.5 h-3.5 text-indigo-500 dk-text-indigo-400" />
+            <span>Bulk Add</span>
+          </button>
+        )}
+      </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex bg-slate-100 dk-bg-slate-900 p-1 rounded-xl">
           <button
@@ -47,6 +60,8 @@ export default function TransactionForm({
             <input
               type="number"
               name="amount"
+              min="0.01"
+              step="any"
               value={formData.amount}
               onChange={handleInputChange}
               placeholder="0.00"

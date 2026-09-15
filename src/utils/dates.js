@@ -49,6 +49,7 @@ export const monthLabel = (monthStr, opts = { month: 'long', year: 'numeric' }) 
 // Shift a "YYYY-MM" string by n months, arithmetic only.
 export const shiftMonth = (monthStr, n) => {
   const [y, m] = String(monthStr || '').split('-').map(Number);
+  if (!y || !m || Number.isNaN(y) || Number.isNaN(m)) return monthStr || '';
   const d = new Date(y, (m - 1) + n, 1);
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
 };

@@ -45,6 +45,7 @@ html.dark .dk-bg-rose-900-20 { background-color: rgba(136, 19, 55, 0.25); }
 html.dark .dk-bg-amber-900-20 { background-color: rgba(120, 53, 15, 0.25); }
 html.dark .dk-bg-orange-500 { background-color: #f97316; }
 html.dark .dk-bg-yellow-500 { background-color: #eab308; }
+html.dark .dk-bg-indigo-400 { background-color: #818cf8; }
 
 html.dark .dk-border-slate-600 { border-color: #475569; }
 html.dark .dk-border-slate-700 { border-color: #334155; }
@@ -64,7 +65,9 @@ html.dark .dk-text-indigo-300 { color: #a5b4fc; }
 html.dark .dk-text-indigo-400 { color: #818cf8; }
 html.dark .dk-text-amber-300 { color: #fcd34d; }
 html.dark .dk-text-emerald-300 { color: #6ee7b7; }
+html.dark .dk-text-emerald-400 { color: #34d399; }
 html.dark .dk-text-rose-300 { color: #fda4af; }
+html.dark .dk-text-rose-400 { color: #fb7185; }
 
 html.dark .dk-hover-bg-slate-700:hover { background-color: #334155; }
 html.dark .dk-hover-bg-slate-800:hover { background-color: #1e293b; }
@@ -73,16 +76,25 @@ html.dark .dk-hover-border-slate-600:hover { border-color: #475569; }
 html.dark .dk-hover-border-indigo-700:hover { border-color: #4338ca; }
 html.dark .dk-hover-border-emerald-700:hover { border-color: #047857; }
 html.dark .dk-hover-text-slate-200:hover { color: #e2e8f0; }
+html.dark .dk-hover-text-rose-300:hover { color: #fda4af; }
+html.dark .dk-hover-text-indigo-400:hover { color: #818cf8; }
 
 html.dark .dk-selection-bg-indigo-900-50::selection,
 html.dark .dk-selection-bg-indigo-900-50 *::selection { background-color: rgba(49, 46, 129, 0.6); }
 html.dark .dk-selection-text-indigo-100::selection,
 html.dark .dk-selection-text-indigo-100 *::selection { color: #e0e7ff; }
 
+.card-savings-gradient {
+  background-color: #6366f1;
+  background-image: linear-gradient(135deg, #6366f1 0%, #9333ea 100%);
+}
+
 html.dark .dk-from-indigo-900-20 {
+  background-color: #1e293b;
   background-image: linear-gradient(to bottom right, rgba(49, 46, 129, 0.45), rgba(88, 28, 135, 0.28));
 }
 html.dark .dk-from-orange-900-10 {
+  background-color: #1e293b;
   background-image: linear-gradient(to bottom right, rgba(124, 45, 18, 0.35), rgba(120, 53, 15, 0.22));
 }
 

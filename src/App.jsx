@@ -31,6 +31,7 @@ import {
   getMonthData,
   isValidHeatmapThresholds,
   loadHeatmapThresholds,
+  processRecurringExpenses,
 } from './utils/calculations';
 import {
   CURRENCIES,
@@ -52,6 +53,8 @@ import MonthPicker from './components/MonthPicker';
 import ApiKeyModal from './components/ApiKeyModal';
 import HeatmapModal from './components/HeatmapModal';
 import TrendModal from './components/TrendModal';
+import BulkAddModal from './components/BulkAddModal';
+import { validateBulkBatch } from './utils/bulkValidation';
 
 const applyTheme = (dark) => {
   const root = document.documentElement;
@@ -62,20 +65,28 @@ const applyTheme = (dark) => {
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('clarity_theme');
-    const dark = saved !== null
-      ? saved === 'dark'
-      : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const dark = saved !== null ? saved === 'dark' : false;
     applyTheme(dark);
     return dark;
   });
 
   const [transactionAnimation, setTransactionAnimation] = useState(null);
-  
+
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('clarity_api_key') || '');
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [tempApiKey, setTempApiKey] = useState('');
 
-  const [transactions, setTransactions] = useState(() => loadLS('transactions', []));
+  const [transactions, setTransactions] = useState(() => {
+    const loaded = loadLS('transactions', []);
+    if (!Array.isArray(loaded)) return [];
+    return loaded.map(t => {
+      if (!t || typeof t !== 'object') return t;
+      return {
+        ...t,
+        amount: Math.abs(Number(t.amount) || 0),
+      };
+    });
+  });
 
   const [formData, setFormData] = useState({
     type: 'expense',
@@ -88,17 +99,23 @@ export default function App() {
   const [isSplit, setIsSplit] = useState(false);
   const [splitDetails, setSplitDetails] = useState({ person: '', amount: '' });
 
-  const [filter, setFilter] = useState('all'); 
+  const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [currency, setCurrency] = useState(() => loadLS('currency', 'INR'));
   const [selectedMonth, setSelectedMonth] = useState(() => loadLS('selected_month', getTodayStr().slice(0, 7)));
   const [activeTab, setActiveTab] = useState(() => loadLS('active_tab', 'dashboard'));
-  
+
   const [monthlyTarget, setMonthlyTarget] = useState(() => loadLS('monthly_target', 0));
   const [categoryTargets, setCategoryTargets] = useState(() => loadLS('category_targets', {}));
   const [showBudgetSettings, setShowBudgetSettings] = useState(false);
 
-  const [recurring, setRecurring] = useState(() => loadLS('recurring', []));
+  const [recurring, setRecurring] = useState(() => {
+    const saved = loadLS('recurring', []);
+    if (!Array.isArray(saved)) return [];
+    return saved.map((r, i) => (r && r.id ? r : { ...r, id: `recurring-legacy-${i + 1}` }));
+  });
+  const [processedRecurring, setProcessedRecurring] = useState(() => loadLS('recurring_processed', []));
+  const [recurringErrors, setRecurringErrors] = useState([]);
   const [planned, setPlanned] = useState(() => loadLS('planned', []));
   const [recurringForm, setRecurringForm] = useState({ name: '', amount: '', day: '1', category: 'utilities' });
   const [plannedForm, setPlannedForm] = useState({ name: '', amount: '', date: getTodayStr(), category: 'other_expense' });
@@ -118,11 +135,11 @@ export default function App() {
   const [isScanning, setIsScanning] = useState(false);
   const fileInputRef = useRef(null);
   const magicIdRef = useRef(0);
-  const nextId = (prefix) => `${prefix}-${magicIdRef.current += 1}`;
-  
+  const nextId = (prefix) => `${prefix}-${Date.now()}-${magicIdRef.current += 1}`;
+
   const [editingId, setEditingId] = useState(null);
   const [toast, setToast] = useState(null);
-  
+
   const [showReport, setShowReport] = useState(false);
   const [isReportLoading, setIsReportLoading] = useState(false);
   const [reportInsights, setReportInsights] = useState(null);
@@ -130,6 +147,7 @@ export default function App() {
 
   const [isHeatmapOpen, setIsHeatmapOpen] = useState(false);
   const [isTrendOpen, setIsTrendOpen] = useState(false);
+  const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
   const [heatmapThresholds, setHeatmapThresholds] = useState(loadHeatmapThresholds);
   const [heatmapDraft, setHeatmapDraft] = useState(heatmapThresholds);
   const [heatmapValidationError, setHeatmapValidationError] = useState('');
@@ -142,6 +160,7 @@ export default function App() {
   // --- Auto-save everything locally on change ---
   useEffect(() => { saveLS('transactions', transactions); }, [transactions]);
   useEffect(() => { saveLS('recurring', recurring); }, [recurring]);
+  useEffect(() => { saveLS('recurring_processed', processedRecurring); }, [processedRecurring]);
   useEffect(() => { saveLS('planned', planned); }, [planned]);
   useEffect(() => { saveLS('loans', loans); }, [loans]);
   useEffect(() => { saveLS('goals', goals); }, [goals]);
@@ -187,6 +206,42 @@ export default function App() {
 
   const { balance } = useMemo(() => calculateBalance(transactions), [transactions]);
 
+  const getAvailableBalance = (excludeTransactionId = null) => {
+    return transactions.reduce((acc, t) => {
+      if (!t || t.id === excludeTransactionId) return acc;
+      const amt = Math.abs(Number(t.amount) || 0);
+      if (t.type === 'income') return acc + amt;
+      if (t.type === 'expense') return acc - amt;
+      return acc;
+    }, 0);
+  };
+
+  // Automatically process recurring expenses when due
+  useEffect(() => {
+    const available = calculateBalance(transactions).balance;
+    const { newTransactions, newProcessedKeys, blockedExpenses } = processRecurringExpenses({
+      recurring,
+      transactions,
+      processedRecurring,
+      todayStr: getTodayStr(),
+      availableBalance: available,
+      generateId: nextId,
+    });
+
+    if (newTransactions.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTransactions(prev => [...newTransactions, ...prev]);
+      setProcessedRecurring(prev => [...prev, ...newProcessedKeys]);
+    }
+
+    setRecurringErrors(prev => {
+      if (prev.length === 0 && blockedExpenses.length === 0) return prev;
+      const prevKeys = prev.map(e => `${e.recurringId}:${e.required}`).join('|');
+      const nextKeys = blockedExpenses.map(e => `${e.recurringId}:${e.required}`).join('|');
+      return prevKeys === nextKeys ? prev : blockedExpenses;
+    });
+  }, [recurring, transactions, processedRecurring]);
+
   const displayTransactions = useMemo(
     () => filterTransactions(transactions, selectedMonth, filter, searchQuery, INCOME_SOURCES, EXPENSE_CATEGORIES),
     [transactions, selectedMonth, filter, searchQuery]
@@ -198,8 +253,8 @@ export default function App() {
   );
 
   const warnings = useMemo(
-    () => calculateWarnings(currentMonthData, monthlyTarget, categoryTargets, currency, EXPENSE_CATEGORIES),
-    [currentMonthData, monthlyTarget, categoryTargets, currency]
+    () => calculateWarnings(currentMonthData, monthlyTarget, categoryTargets, currency, EXPENSE_CATEGORIES, recurringErrors),
+    [currentMonthData, monthlyTarget, categoryTargets, currency, recurringErrors]
   );
 
   const noSpendStreak = useMemo(() => calculateNoSpendStreak(transactions), [transactions]);
@@ -209,8 +264,6 @@ export default function App() {
     [displayTransactions]
   );
 
-  const savingsDifference = currentMonthData.savings - previousMonthData.savings;
-  
   // Days elapsed in the selected month (full month length for past months).
   const elapsedDays = useMemo(() => calculateElapsedDays(selectedMonth), [selectedMonth]);
   const dailyAverage = currentMonthData.expense / elapsedDays;
@@ -255,12 +308,19 @@ export default function App() {
 
   const heatmapData = useMemo(() => generateHeatmapData(transactions, selectedMonth), [transactions, selectedMonth]);
 
-  const getHeatmapColor = (spent) => {
-    if (spent === 0) return 'bg-slate-100 dk-bg-slate-800-50';
-    if (spent <= heatmapThresholds.green) return 'bg-emerald-400 dk-bg-emerald-500';
-    if (spent <= heatmapThresholds.yellow) return 'bg-yellow-400 dk-bg-yellow-500';
-    if (spent <= heatmapThresholds.orange) return 'bg-orange-400 dk-bg-orange-500';
-    return 'bg-rose-500 dk-bg-rose-600';
+  const getHeatmapColor = (spent, dateStr) => {
+    const todayStr = getTodayStr();
+    if (spent > 0) {
+      if (spent <= heatmapThresholds.green) return 'bg-emerald-400 dk-bg-emerald-500';
+      if (spent <= heatmapThresholds.yellow) return 'bg-yellow-400 dk-bg-yellow-500';
+      if (spent <= heatmapThresholds.orange) return 'bg-orange-400 dk-bg-orange-500';
+      return 'bg-rose-500 dk-bg-rose-600';
+    }
+    // spent === 0
+    if (dateStr && dateStr > todayStr) {
+      return 'bg-slate-100 dk-bg-slate-800-50';
+    }
+    return 'bg-emerald-400 dk-bg-emerald-500';
   };
 
   const sixMonthTrend = useMemo(() => calculateSixMonthTrend(monthlyData, selectedMonth), [monthlyData, selectedMonth]);
@@ -291,7 +351,14 @@ export default function App() {
       return;
     }
 
-    const grossAmount = Number(formData.amount);
+    const grossAmount = Math.abs(Number(formData.amount));
+    if (formData.type === 'expense') {
+      const available = getAvailableBalance(editingId);
+      if (grossAmount > available) {
+        setToast({ message: `Insufficient balance. You only have ${formatMoney(available)} available.` });
+        return;
+      }
+    }
     let amountNum = grossAmount;
     let splitLoan = null;
     if (formData.type === 'expense' && isSplit && splitDetails.amount && splitDetails.person && !editingId) {
@@ -309,11 +376,15 @@ export default function App() {
       }
     }
 
+    const existingTx = editingId ? transactions.find(t => t.id === editingId) : null;
     const newTransaction = {
       id: editingId ? editingId : nextId('transaction'),
       ...formData,
       amount: splitLoan ? grossAmount : amountNum,
       ...(splitLoan && { linkedLoanId: splitLoan.id, loanMovement: 'principal' }),
+      ...(existingTx?.recurringId && { recurringId: existingTx.recurringId }),
+      ...(existingTx?.recurringOccurrence && { recurringOccurrence: existingTx.recurringOccurrence }),
+      ...(existingTx?.isRecurring && { isRecurring: existingTx.isRecurring }),
     };
     if (splitLoan) {
       splitLoan.principalTransactionId = newTransaction.id;
@@ -323,7 +394,7 @@ export default function App() {
     }
     if (editingId) {
       setTransactions(prev => prev.map(t => t.id === editingId ? newTransaction : t));
-      setEditingId(null); 
+      setEditingId(null);
       setToast({ message: 'Transaction updated successfully' });
     } else {
       setTransactions(prev => [newTransaction, ...prev]);
@@ -331,13 +402,17 @@ export default function App() {
       setTimeout(() => setTransactionAnimation(null), 1800);
     }
     setFormData({ type: 'expense', amount: '', category: 'food', paymentMethod: 'upi', date: newTransaction.date, note: '' });
-    setIsSplit(false); 
+    setIsSplit(false);
     setSplitDetails({ person: '', amount: '' });
     setSelectedMonth(getMonthString(newTransaction.date));
   };
 
   const deleteTransaction = (id) => {
     const tToDelete = transactions.find(t => t.id === id);
+    if (tToDelete?.recurringId && tToDelete?.recurringOccurrence) {
+      const key = `${tToDelete.recurringId}:${tToDelete.recurringOccurrence}`;
+      setProcessedRecurring(prev => (prev.includes(key) ? prev : [...prev, key]));
+    }
     const linkedLoan = tToDelete?.linkedLoanId ? loans.find(loan => loan.id === tToDelete.linkedLoanId) : null;
     if (linkedLoan && tToDelete.loanMovement === 'principal') {
       deleteLoanWithUndo(linkedLoan);
@@ -356,7 +431,7 @@ export default function App() {
     setToast({
       message: `Deleted ${tToDelete?.category || 'transaction'}`,
       undoAction: () => {
-        setTransactions(prev => [tToDelete, ...prev].sort((a,b) => new Date(b.date) - new Date(a.date)));
+        setTransactions(prev => [tToDelete, ...prev].sort((a, b) => new Date(b.date) - new Date(a.date)));
         if (linkedLoan && tToDelete.loanMovement === 'repayment') {
           setLoans(prev => prev.map(loan => loan.id === linkedLoan.id ? {
             ...loan,
@@ -375,7 +450,7 @@ export default function App() {
     setEditingId(transaction.id);
     setFormData({
       type: transaction.type,
-      amount: transaction.amount,
+      amount: Math.abs(Number(transaction.amount) || 0),
       category: transaction.category,
       paymentMethod: transaction.paymentMethod || 'upi',
       date: transaction.date,
@@ -398,7 +473,7 @@ export default function App() {
       : [{ id: nextId('recurring'), ...item }, ...prev]);
     setEditingRecurringId(null);
     setRecurringForm({ name: '', amount: '', day: '1', category: 'utilities' });
-    setToast({ message: editingRecurringId ? 'Recurring expense updated!' : 'Recurring expense added!' }); 
+    setToast({ message: editingRecurringId ? 'Recurring expense updated!' : 'Recurring expense added!' });
     setTimeout(() => setToast(null), 3000);
   };
 
@@ -429,7 +504,7 @@ export default function App() {
       : [{ id: nextId('planned'), ...item }, ...prev]);
     setEditingPlannedId(null);
     setPlannedForm({ name: '', amount: '', date: getTodayStr(), category: 'other_expense' });
-    setToast({ message: editingPlannedId ? 'Planned expense updated!' : 'Planned expense added!' }); 
+    setToast({ message: editingPlannedId ? 'Planned expense updated!' : 'Planned expense added!' });
     setTimeout(() => setToast(null), 3000);
   };
 
@@ -443,7 +518,7 @@ export default function App() {
     }
     setGoals(prev => [...prev, { id: nextId('goal'), name: goalForm.name.trim(), target, current }]);
     setGoalForm({ name: '', target: '', current: '' });
-    setToast({ message: 'Savings goal added!' }); 
+    setToast({ message: 'Savings goal added!' });
     setTimeout(() => setToast(null), 3000);
   };
 
@@ -457,6 +532,13 @@ export default function App() {
     const loanId = nextId('loan');
     const transactionId = nextId('loan-cash');
     const isLent = loanForm.type === 'lent';
+    if (isLent) {
+      const available = getAvailableBalance();
+      if (amount > available) {
+        setToast({ message: `Insufficient balance. You only have ${formatMoney(available)} available.` });
+        return;
+      }
+    }
     const cashTransaction = {
       id: transactionId,
       type: isLent ? 'expense' : 'income',
@@ -535,6 +617,13 @@ export default function App() {
     }
     const transactionId = nextId('loan-repayment');
     const isLent = loan.type === 'lent';
+    if (!isLent) {
+      const available = getAvailableBalance();
+      if (payment > available) {
+        setToast({ message: `Insufficient balance. You only have ${formatMoney(available)} available.` });
+        return;
+      }
+    }
     const repaymentTransaction = {
       id: transactionId,
       type: isLent ? 'income' : 'expense',
@@ -569,19 +658,20 @@ export default function App() {
       currency,
       selectedMonth,
       heatmapThresholds,
+      processedRecurring,
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); 
-    a.href = url; 
-    a.download = `clarity-backup-${getTodayStr()}.json`; 
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `clarity-backup-${getTodayStr()}.json`;
     a.click();
-    setToast({ message: 'Backup successfully downloaded!' }); 
+    setToast({ message: 'Backup successfully downloaded!' });
     setTimeout(() => setToast(null), 3000);
   };
 
   const handleImport = (e) => {
-    const file = e.target.files[0]; 
+    const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -601,8 +691,16 @@ export default function App() {
         })));
         if (Array.isArray(data.goals)) setGoals(data.goals.filter(item => item && typeof item.name === 'string' && Number.isFinite(Number(item.target)) && Number(item.target) > 0 && Number(item.target) <= MAX_MONEY_AMOUNT).map(item => ({ ...item, target: Number(item.target), current: Math.min(Number(item.target), Math.max(0, Number(item.current) || 0)) })));
         if (data.categoryTargets && typeof data.categoryTargets === 'object' && !Array.isArray(data.categoryTargets)) setCategoryTargets(Object.fromEntries(Object.entries(data.categoryTargets).filter(([, value]) => Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= MAX_MONEY_AMOUNT).map(([key, value]) => [key, Number(value)])));
-        if (Array.isArray(data.recurring)) setRecurring(data.recurring.filter(item => item && typeof item.name === 'string' && Number.isFinite(Number(item.amount)) && Number(item.amount) > 0 && Number(item.amount) <= MAX_MONEY_AMOUNT && Number.isInteger(Number(item.day)) && Number(item.day) >= 1 && Number(item.day) <= 31).map(item => ({ ...item, amount: Number(item.amount), day: Number(item.day) })));
+        if (Array.isArray(data.recurring)) setRecurring(data.recurring.filter(item => item && typeof item.name === 'string' && Number.isFinite(Number(item.amount)) && Number(item.amount) > 0 && Number(item.amount) <= MAX_MONEY_AMOUNT && Number.isInteger(Number(item.day)) && Number(item.day) >= 1 && Number(item.day) <= 31).map((item, i) => ({ ...item, id: item.id || `recurring-${i + 1}`, amount: Number(item.amount), day: Number(item.day) })));
         if (Array.isArray(data.planned)) setPlanned(data.planned.filter(item => item && typeof item.name === 'string' && Number.isFinite(Number(item.amount)) && Number(item.amount) > 0 && Number(item.amount) <= MAX_MONEY_AMOUNT && isStoredDate(item.date)).map(item => ({ ...item, amount: Number(item.amount) })));
+        if (Array.isArray(data.processedRecurring)) {
+          setProcessedRecurring(data.processedRecurring.filter(item => typeof item === 'string'));
+        } else {
+          const fromTransactions = validTransactions
+            .filter(item => item?.recurringId && item?.recurringOccurrence)
+            .map(item => `${item.recurringId}:${item.recurringOccurrence}`);
+          setProcessedRecurring(fromTransactions);
+        }
         if (Number.isFinite(Number(data.monthlyTarget)) && Number(data.monthlyTarget) >= 0) setMonthlyTarget(Number(data.monthlyTarget));
         if (CURRENCIES.some(item => item.code === data.currency)) setCurrency(data.currency);
         if (typeof data.selectedMonth === 'string' && /^\d{4}-\d{2}$/.test(data.selectedMonth)) setSelectedMonth(data.selectedMonth);
@@ -612,8 +710,8 @@ export default function App() {
           setHeatmapDraft(restoredThresholds);
         }
         setToast({ message: 'Backup completely restored!' });
-      } catch { 
-        setToast({ message: 'Invalid backup file!' }); 
+      } catch {
+        setToast({ message: 'Invalid backup file!' });
       }
       setTimeout(() => setToast(null), 4000);
     };
@@ -621,8 +719,8 @@ export default function App() {
   };
 
   const handlePrint = () => {
-    try { 
-      window.print(); 
+    try {
+      window.print();
     } catch {
       setToast({ message: 'Printing blocked by browser. Press Ctrl+P or Cmd+P.' });
       setTimeout(() => setToast(null), 4000);
@@ -679,8 +777,17 @@ export default function App() {
     }
 
     const { data: draft, aiError } = res;
+    if (draft.type === 'expense') {
+      const available = getAvailableBalance();
+      if (draft.amount > available) {
+        setIsMagicLoading(false);
+        setToast({ message: `Insufficient balance. You only have ${formatMoney(available)} available.` });
+        setTimeout(() => setToast(null), 4000);
+        return;
+      }
+    }
     const newT = {
-      id: `magic-${magicIdRef.current += 1}`,
+      id: nextId('magic'),
       type: draft.type,
       amount: draft.amount,
       category: draft.category,
@@ -709,6 +816,52 @@ export default function App() {
         : `Added ${newT.type} ${formatMoney(newT.amount)} - ${catLabel}`,
     });
     setIsMagicLoading(false);
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  const handleBulkAdd = () => {
+    setIsBulkAddOpen(true);
+  };
+
+  const handleCommitBulkTransactions = (selectedRows) => {
+    if (!selectedRows || selectedRows.length === 0) return;
+
+    // Atomic validation right before committing to state
+    const finalValidation = validateBulkBatch(selectedRows, transactions, formatMoney);
+    if (!finalValidation.isValid || finalValidation.errorCount > 0) {
+      setToast({ message: 'Validation failed. Some transactions could not be committed.' });
+      setTimeout(() => setToast(null), 4000);
+      return;
+    }
+
+    const newTransactions = selectedRows.map(row => ({
+      id: nextId('transaction'),
+      type: row.type === 'income' ? 'income' : 'expense',
+      amount: Math.abs(Number(row.amount)),
+      category: row.category,
+      paymentMethod: row.paymentMethod || 'upi',
+      date: row.date,
+      note: (row.note || '').trim(),
+    }));
+
+    setTransactions(prev => [...newTransactions, ...prev]);
+
+    // Update selectedMonth to the latest transaction's month
+    const sortedByDate = [...newTransactions].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    if (sortedByDate[0]?.date) {
+      setSelectedMonth(getMonthString(sortedByDate[0].date));
+    }
+    setFilter('all');
+    setSearchQuery('');
+
+    if (newTransactions.length === 1) {
+      setTransactionAnimation({ type: newTransactions[0].type, amount: newTransactions[0].amount, id: newTransactions[0].id });
+      setTimeout(() => setTransactionAnimation(null), 1800);
+    }
+
+    setToast({
+      message: `Successfully added ${newTransactions.length} transaction${newTransactions.length === 1 ? '' : 's'}.`,
+    });
     setTimeout(() => setToast(null), 4000);
   };
 
@@ -760,7 +913,7 @@ export default function App() {
           <div className="flex items-center gap-2 text-indigo-600 dk-text-indigo-400">
             <Activity className="w-6 h-6 shrink-0" />
             <h1 className="text-xl font-bold tracking-tight text-slate-900 dk-text-white hidden lg:block">Clarity Finance</h1>
-            
+
             <div className="flex bg-slate-100 dk-bg-slate-800 p-1 rounded-xl ml-2 lg:ml-6 overflow-x-auto max-w-full">
               <button onClick={() => setActiveTab('dashboard')} className={`px-3 sm:px-4 py-1.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${activeTab === 'dashboard' ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-400 shadow-sm' : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-slate-200'}`}>Dashboard</button>
               <button onClick={() => setActiveTab('forecast')} className={`px-3 sm:px-4 py-1.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${activeTab === 'forecast' ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-400 shadow-sm' : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-slate-200'}`}>Forecast</button>
@@ -768,7 +921,7 @@ export default function App() {
               <button onClick={() => setActiveTab('goals')} className={`px-3 sm:px-4 py-1.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${activeTab === 'goals' ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-400 shadow-sm' : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-slate-200'}`}>Goals</button>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2 sm:gap-4 text-sm font-medium text-slate-600 dk-text-slate-300">
             <MonthPicker
               selectedMonth={selectedMonth}
@@ -790,7 +943,7 @@ export default function App() {
       </nav>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        
+
         <div className="hidden print-only mb-8 border-b pb-4">
           <h1 className="text-3xl font-bold text-black">Financial Report</h1>
           <p className="text-lg text-gray-600">Month: {monthLabel(selectedMonth)}</p>
@@ -809,7 +962,7 @@ export default function App() {
         {activeTab === 'dashboard' && (
           <Dashboard
             currentMonthData={currentMonthData}
-            savingsDifference={savingsDifference}
+            previousMonthData={previousMonthData}
             balance={balance}
             highestSavingsMonth={highestSavingsMonth}
             monthlyTarget={monthlyTarget}
@@ -846,6 +999,7 @@ export default function App() {
             generateDetailedReport={handleGenerateReport}
             monthLabel={monthLabel}
             selectedMonth={selectedMonth}
+            onSelectMonth={setSelectedMonth}
             displayTransactions={displayTransactions}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
@@ -856,6 +1010,7 @@ export default function App() {
             expenseCategories={EXPENSE_CATEGORIES}
             incomeSources={INCOME_SOURCES}
             paymentMethods={PAYMENT_METHODS}
+            onBulkAdd={handleBulkAdd}
           />
         )}
 
@@ -952,6 +1107,23 @@ export default function App() {
         reportError={reportError}
         reportInsights={reportInsights}
         generateDetailedReport={handleGenerateReport}
+      />
+
+      <BulkAddModal
+        isOpen={isBulkAddOpen}
+        onClose={() => setIsBulkAddOpen(false)}
+        onCommit={handleCommitBulkTransactions}
+        apiKey={apiKey}
+        onOpenApiKeyModal={() => {
+          setTempApiKey(apiKey);
+          setShowApiKeyModal(true);
+        }}
+        existingTransactions={transactions}
+        expenseCategories={EXPENSE_CATEGORIES}
+        incomeSources={INCOME_SOURCES}
+        paymentMethods={PAYMENT_METHODS}
+        formatMoney={formatMoney}
+        CurrencyIcon={CurrencyIcon}
       />
 
       {toast && (

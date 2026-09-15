@@ -1,5 +1,5 @@
-import { getMonthString, getTodayStr, monthLabel, sanitizeDate, shiftDate, shiftMonth } from './dates';
-import { loadLS } from './storage';
+import { getMonthString, getTodayStr, monthLabel, sanitizeDate, shiftDate, shiftMonth } from './dates.js';
+import { loadLS } from './storage.js';
 
 export const DEFAULT_HEATMAP_THRESHOLDS = { green: 50, yellow: 150, orange: 300 };
 
@@ -23,17 +23,26 @@ const emptyMonthData = () => ({ income: 0, expense: 0, savings: 0, categorySpend
 
 export const aggregateMonthlyData = (transactions) => {
   const dataByMonth = {};
-  transactions.forEach(t => {
+  (transactions || []).forEach(t => {
+    if (!t) return;
     const month = typeof t.date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(t.date)
       ? t.date.slice(0, 7)
       : getMonthString(t.date);
+    if (!month) return;
     if (!dataByMonth[month]) dataByMonth[month] = emptyMonthData();
-    if (t.type === 'income') dataByMonth[month].income += t.amount;
-    else {
-      dataByMonth[month].expense += t.amount;
-      dataByMonth[month].categorySpending[t.category] = (dataByMonth[month].categorySpending[t.category] || 0) + t.amount;
+    const amount = Math.abs(Number(t.amount) || 0);
+    if (t.type === 'income') {
+      dataByMonth[month].income += amount;
+    } else if (t.type === 'expense') {
+      dataByMonth[month].expense += amount;
+      if (t.category) {
+        dataByMonth[month].categorySpending[t.category] = (dataByMonth[month].categorySpending[t.category] || 0) + amount;
+      }
     }
-    dataByMonth[month].savings = dataByMonth[month].income - dataByMonth[month].expense;
+    const rawSavings = dataByMonth[month].income - dataByMonth[month].expense;
+    dataByMonth[month].savings = rawSavings === 0 ? 0 : rawSavings;
+    if (dataByMonth[month].expense === 0) dataByMonth[month].expense = 0;
+    if (dataByMonth[month].income === 0) dataByMonth[month].income = 0;
   });
   return dataByMonth;
 };
@@ -49,9 +58,16 @@ export const getMonthData = (monthlyData, selectedMonth) => {
   return { currentMonthData: current, previousMonthData: previous, highestSavingsMonth: bestMonth ? { month: bestMonth, savings: maxSavings } : null };
 };
 
-export const calculateBalance = (transactions) => transactions.reduce((acc, curr) => {
-  if (curr.type === 'income') { acc.totalIncome += curr.amount; acc.balance += curr.amount; }
-  else { acc.totalExpense += curr.amount; acc.balance -= curr.amount; }
+export const calculateBalance = (transactions) => (transactions || []).reduce((acc, curr) => {
+  if (!curr) return acc;
+  const amount = Math.abs(Number(curr.amount) || 0);
+  if (curr.type === 'income') {
+    acc.totalIncome += amount;
+    acc.balance += amount;
+  } else if (curr.type === 'expense') {
+    acc.totalExpense += amount;
+    acc.balance -= amount;
+  }
   return acc;
 }, { totalIncome: 0, totalExpense: 0, balance: 0 });
 
@@ -77,12 +93,13 @@ export const filterTransactions = (transactions, selectedMonth, filter, searchQu
 };
 
 export const calculateExpensesByCategory = (displayTransactions, currentExpense, expenseCategories) => {
-  const grouped = displayTransactions.filter(t => t.type === 'expense').reduce((acc, curr) => {
-    acc[curr.category] = (acc[curr.category] || 0) + curr.amount;
+  const grouped = (displayTransactions || []).filter(t => t && t.type === 'expense').reduce((acc, curr) => {
+    const amount = Math.abs(Number(curr.amount) || 0);
+    acc[curr.category] = (acc[curr.category] || 0) + amount;
     return acc;
   }, {});
   return Object.entries(grouped).map(([id, amount]) => {
-    const cat = expenseCategories.find(c => c.id === id);
+    const cat = (expenseCategories || []).find(c => c.id === id);
     return { ...cat, amount, percentage: currentExpense > 0 ? (amount / currentExpense) * 100 : 0 };
   }).sort((a, b) => b.amount - a.amount);
 };
@@ -96,8 +113,10 @@ export const generateHeatmapData = (transactions, selectedMonth) => {
   for (let i = 0; i < firstDay; i++) data.push({ empty: true, id: `empty-${i}` });
   for (let i = 1; i <= days; i++) {
     const dateStr = `${selectedMonth}-${i.toString().padStart(2, '0')}`;
-    const spent = transactions.filter(t => t.type === 'expense' && getMonthString(t.date) === selectedMonth && String(t.date).slice(8, 10) === String(i).padStart(2, '0')).reduce((sum, t) => sum + t.amount, 0);
-    data.push({ day: i, dateStr, spent, empty: false });
+    const spent = (transactions || [])
+      .filter(t => t && t.type === 'expense' && getMonthString(t.date) === selectedMonth && String(t.date).slice(8, 10) === String(i).padStart(2, '0'))
+      .reduce((sum, t) => sum + Math.abs(Number(t.amount) || 0), 0);
+    data.push({ day: i, dateStr, spent: spent === 0 ? 0 : spent, empty: false });
   }
   return data;
 };
@@ -126,9 +145,9 @@ export const calculateFinancialHealth = (currentMonthData, monthlyTarget, recurr
   else if (savingsRateVal > 0) { score += 15; breakdown.push("Positive savings rate, but under 20%"); }
   else breakdown.push("No savings generated this month");
   if (monthlyTarget > 0) {
-    if (currentMonthData.expense <= monthlyTarget) { score += 30; breakdown.push("Spending within overall budget target"); }
-    else { score += 10; breakdown.push("Spending exceeded budget target"); }
-  } else { score += 20; breakdown.push("No strict budget target set"); }
+    if (currentMonthData.savings >= monthlyTarget) { score += 30; breakdown.push("Monthly savings target achieved"); }
+    else { score += 10; breakdown.push("Behind monthly savings target"); }
+  } else { score += 20; breakdown.push("No monthly savings target set"); }
   const recurringTotal = recurring.reduce((sum, r) => sum + r.amount, 0);
   if (currentMonthData.income > 0 && (recurringTotal / currentMonthData.income) <= 0.3) { score += 15; breakdown.push("Fixed costs comfortably low (< 30% income)"); }
   else { score += 5; breakdown.push("High fixed costs burden"); }
@@ -138,8 +157,96 @@ export const calculateFinancialHealth = (currentMonthData, monthlyTarget, recurr
   const hasEmergency = goals.some(g => g.name.toLowerCase().includes('emergency') && g.current > 0);
   if (hasEmergency) { score += 10; breakdown.push("Active emergency fund"); }
   else breakdown.push("No emergency fund tracking");
-  const message = score >= 80 ? "Great financial shape! Strong savings and budgeting." : score >= 60 ? "Good standing. Room to optimize fixed costs." : "Needs attention. Focus on an emergency fund and budget limits.";
+  const message = score >= 80 ? "Great financial shape! Strong savings performance." : score >= 60 ? "Good standing. Room to optimize savings and fixed costs." : "Needs attention. Focus on building savings and an emergency fund.";
   return { score, breakdown, message };
+};
+
+export const processRecurringExpenses = ({
+  recurring = [],
+  transactions = [],
+  processedRecurring = [],
+  todayStr = getTodayStr(),
+  availableBalance = 0,
+  generateId,
+}) => {
+  const currentMonth = todayStr.slice(0, 7);
+  const currentDay = Number(todayStr.slice(8, 10));
+  const [year, month] = currentMonth.split('-').map(Number);
+  const daysInMonth = new Date(year, month, 0).getDate();
+
+  const processedSet = new Set(processedRecurring || []);
+
+  (transactions || []).forEach(t => {
+    if (t?.recurringId && t?.recurringOccurrence) {
+      processedSet.add(`${t.recurringId}:${t.recurringOccurrence}`);
+    }
+  });
+
+  const newTransactions = [];
+  const newProcessedKeys = [];
+  const blockedExpenses = [];
+
+  let runningAvailableBalance = availableBalance;
+
+  const sortedRecurring = [...(recurring || [])].sort((a, b) => {
+    const dayA = Number(a?.day) || 1;
+    const dayB = Number(b?.day) || 1;
+    if (dayA !== dayB) return dayA - dayB;
+    return String(a?.id || '').localeCompare(String(b?.id || ''));
+  });
+
+  for (const item of sortedRecurring) {
+    if (!item || !item.id) continue;
+    const occurrenceKey = `${item.id}:${currentMonth}`;
+    if (processedSet.has(occurrenceKey)) {
+      continue;
+    }
+
+    const itemDay = Number(item.day) || 1;
+    const dueDay = Math.min(Math.max(itemDay, 1), daysInMonth);
+
+    if (dueDay <= currentDay) {
+      const amount = Math.abs(Number(item.amount) || 0);
+      if (!Number.isFinite(amount) || amount <= 0) continue;
+
+      if (runningAvailableBalance >= amount) {
+        runningAvailableBalance -= amount;
+        const dueDayStr = String(dueDay).padStart(2, '0');
+        const txDate = `${currentMonth}-${dueDayStr}`;
+        const newTx = {
+          id: generateId ? generateId('recurring-tx') : `recurring-tx-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          type: 'expense',
+          amount,
+          category: item.category || 'utilities',
+          paymentMethod: item.paymentMethod || 'bank',
+          date: txDate,
+          note: item.name ? `${item.name} (Recurring)` : 'Recurring Expense',
+          recurringId: item.id,
+          recurringOccurrence: currentMonth,
+          isRecurring: true,
+        };
+        newTransactions.push(newTx);
+        newProcessedKeys.push(occurrenceKey);
+        processedSet.add(occurrenceKey);
+      } else {
+        blockedExpenses.push({
+          recurringId: item.id,
+          name: item.name || 'Recurring Expense',
+          amount,
+          dueDay,
+          currentMonth,
+          required: amount,
+          available: runningAvailableBalance,
+        });
+      }
+    }
+  }
+
+  return {
+    newTransactions,
+    newProcessedKeys,
+    blockedExpenses,
+  };
 };
 
 export const calculateProjections = (recurring, planned, transactions, balance, currentMonthData, selectedMonth) => {
@@ -149,15 +256,22 @@ export const calculateProjections = (recurring, planned, transactions, balance, 
   const todayDay = Number(todayStr.slice(8, 10));
   const daysInCurrentMonth = new Date(Number(todayStr.slice(0, 4)), Number(todayStr.slice(5, 7)), 0).getDate();
   const monthEndStr = `${currentMonth}-${String(daysInCurrentMonth).padStart(2, '0')}`;
-  const matchedRecurringTransactions = new Set();
-  const upcomingRecurringTotal = isCurrentForecastMonth ? recurring.reduce((sum, item) => {
+
+  const upcomingRecurringTotal = isCurrentForecastMonth ? (recurring || []).reduce((sum, item) => {
+    if (!item || !item.id) return sum;
+    const hasBeenRecorded = (transactions || []).some(transaction =>
+      transaction &&
+      transaction.type === 'expense' &&
+      transaction.recurringId === item.id &&
+      transaction.recurringOccurrence === currentMonth
+    );
+    if (hasBeenRecorded) return sum;
+
     const dueDay = Math.min(Math.max(Number(item.day) || 1, 1), daysInCurrentMonth);
     if (dueDay < todayDay) return sum;
-    const recordedTransaction = transactions.find(transaction => !matchedRecurringTransactions.has(transaction.id) && transaction.type === 'expense' && getMonthString(transaction.date) === currentMonth && Number(transaction.date.slice(8, 10)) === dueDay && transaction.category === item.category && Number(transaction.amount) === Number(item.amount));
-    if (recordedTransaction) { matchedRecurringTransactions.add(recordedTransaction.id); return sum; }
     return sum + Number(item.amount);
   }, 0) : 0;
-  const upcomingPlannedTotal = isCurrentForecastMonth ? planned.filter(item => item.date >= todayStr && item.date <= monthEndStr).reduce((sum, item) => sum + Number(item.amount), 0) : 0;
+  const upcomingPlannedTotal = isCurrentForecastMonth ? (planned || []).filter(item => item && item.date >= todayStr && item.date <= monthEndStr).reduce((sum, item) => sum + Number(item.amount), 0) : 0;
   return { upcomingRecurringTotal, projectedBalance: balance - upcomingRecurringTotal - upcomingPlannedTotal, projectedSavings: currentMonthData.income - currentMonthData.expense - upcomingRecurringTotal - upcomingPlannedTotal };
 };
 
@@ -274,24 +388,39 @@ export const parseQuickEntry = (input, todayStr = getTodayStr()) => {
   return { type, amount, category, paymentMethod, date, note };
 };
 
-export const calculateWarnings = (currentMonthData, monthlyTarget, categoryTargets, currency, expenseCategories) => {
+export const calculateWarnings = (currentMonthData, monthlyTarget, categoryTargets, currency, expenseCategories, recurringErrors = []) => {
   const alerts = [];
-  const expense = currentMonthData?.expense || 0;
+  const savings = currentMonthData?.savings ?? 0;
+
+  (recurringErrors || []).forEach(err => {
+    const formattedReq = new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(err.required);
+    const formattedAvail = new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(Math.max(0, err.available));
+    alerts.push({
+      type: 'warning',
+      icon: '⚠️',
+      text: `Recurring expense "${err.name}" (${formattedReq}) could not be recorded due to insufficient balance (${formattedAvail} available).`,
+    });
+  });
 
   if (monthlyTarget > 0) {
-    const overallPct = (expense / monthlyTarget) * 100;
-    if (overallPct >= 100) {
-      alerts.push({
-        type: 'danger',
-        icon: '🚨',
-        text: `You have exceeded your overall budget by ${new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(expense - monthlyTarget)}!`,
-      });
-    } else if (overallPct >= 80) {
-      alerts.push({
-        type: 'warning',
-        icon: '⚠️',
-        text: `Overall budget ${overallPct.toFixed(0)}% used. Only ${new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(monthlyTarget - expense)} remaining.`,
-      });
+    if (savings < monthlyTarget) {
+      const diff = monthlyTarget - savings;
+      const formattedDiff = new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(diff);
+      const formattedTarget = new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(monthlyTarget);
+
+      if (savings < 0) {
+        alerts.push({
+          type: 'danger',
+          icon: '🚨',
+          text: `You have negative savings and are ${formattedDiff} behind your monthly savings target of ${formattedTarget}!`,
+        });
+      } else {
+        alerts.push({
+          type: 'warning',
+          icon: '⚠️',
+          text: `You are ${formattedDiff} behind your monthly savings target of ${formattedTarget}.`,
+        });
+      }
     }
   }
 
