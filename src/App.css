@@ -115,11 +115,76 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 html.dark ::-webkit-scrollbar-thumb { background: #475569; }
 html.dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
-@media print {
-  body { background: white !important; color: black !important; }
-  .no-print { display: none !important; }
-  .print-only { display: block !important; }
-  .print-container { width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; }
-  .print-break-inside-avoid { page-break-inside: avoid; }
-  * { color: black !important; text-shadow: none !important; box-shadow: none !important; }
+/* Screen mode: hide dedicated print document */
+.print-document {
+  display: none;
 }
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 14mm 14mm 14mm;
+  }
+
+  body, html {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 13px !important;
+  }
+
+  /* Hide entire interactive web application in print mode */
+  .web-app-view,
+  nav,
+  .no-print,
+  .theme-container > nav,
+  .theme-container > main {
+    display: none !important;
+  }
+
+  /* Display dedicated monthly financial report document */
+  .print-document {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  /* Retain exact colors, background fills, and badge styling */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Multi-page table repeating header and row break prevention */
+  .report-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  .report-table thead {
+    display: table-header-group !important;
+  }
+
+  .report-table tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .report-avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+

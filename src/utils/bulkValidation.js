@@ -21,8 +21,10 @@ export const createEmptyBulkRow = (fallbackDate) => ({
 /**
  * Compares candidates against existing transactions and against earlier items
  * in the same batch to detect duplicates (e.g. overlapping screenshots).
+ * When isReceipt is true, legitimate multiple items on the same receipt
+ * are not flagged as duplicates of each other.
  */
-export function detectDuplicates(candidateRows, existingTransactions = []) {
+export function detectDuplicates(candidateRows, existingTransactions = [], { isReceipt = false } = {}) {
   if (!Array.isArray(candidateRows)) return [];
 
   const results = [];
@@ -54,12 +56,19 @@ export function detectDuplicates(candidateRows, existingTransactions = []) {
         const sameAmount = Math.abs(candAmt - exAmt) < 0.01;
 
         if (sameDate && sameType && sameAmount) {
-          const notesMatch = Boolean(candNoteClean && exNoteClean && (candNoteClean === exNoteClean || candNoteClean.includes(exNoteClean) || exNoteClean.includes(candNoteClean)));
-          const categoriesMatch = candCategory && exCategory && candCategory === exCategory;
+          const hasCandNote = Boolean(candNoteClean);
+          const hasExNote = Boolean(exNoteClean);
 
-          if (notesMatch || (!candNoteClean && categoriesMatch) || (!exNoteClean && categoriesMatch) || (notesMatch && categoriesMatch)) {
+          let isMatch = false;
+          if (hasCandNote && hasExNote) {
+            isMatch = candNoteClean === exNoteClean || candNoteClean.includes(exNoteClean) || exNoteClean.includes(candNoteClean);
+          } else if (!hasCandNote && !hasExNote) {
+            isMatch = Boolean(candCategory && exCategory && candCategory === exCategory);
+          }
+
+          if (isMatch) {
             isDuplicate = true;
-            duplicateReason = `Matches existing transaction on ${exDate} (${existing.note || existing.category})`;
+            duplicateReason = `Matches existing: ${exDate} · ${existing.note || existing.category || 'Expense'} · ₹${exAmt}`;
             duplicateSource = 'existing';
             break;
           }
@@ -68,7 +77,8 @@ export function detectDuplicates(candidateRows, existingTransactions = []) {
     }
 
     // Check against prior items in this current batch (e.g. overlapping screenshots)
-    if (!isDuplicate && candAmt > 0 && candDate) {
+    // On a single itemized receipt, multiple items of the same product/price are legitimate purchases
+    if (!isReceipt && !isDuplicate && candAmt > 0 && candDate) {
       for (let j = 0; j < i; j++) {
         const prev = candidateRows[j];
         if (!prev) continue;
@@ -83,10 +93,17 @@ export function detectDuplicates(candidateRows, existingTransactions = []) {
         const sameAmount = Math.abs(candAmt - prevAmt) < 0.01;
 
         if (sameDate && sameType && sameAmount) {
-          const notesMatch = Boolean(candNoteClean && prevNoteClean && (candNoteClean === prevNoteClean || candNoteClean.includes(prevNoteClean) || prevNoteClean.includes(candNoteClean)));
-          const categoriesMatch = candCategory && prevCategory && candCategory === prevCategory;
+          const hasCandNote = Boolean(candNoteClean);
+          const hasPrevNote = Boolean(prevNoteClean);
 
-          if (notesMatch || (!candNoteClean && categoriesMatch) || (!prevNoteClean && categoriesMatch) || (notesMatch && categoriesMatch)) {
+          let isMatch = false;
+          if (hasCandNote && hasPrevNote) {
+            isMatch = candNoteClean === prevNoteClean || candNoteClean.includes(prevNoteClean) || prevNoteClean.includes(candNoteClean);
+          } else if (!hasCandNote && !hasPrevNote) {
+            isMatch = Boolean(candCategory && prevCategory && candCategory === prevCategory);
+          }
+
+          if (isMatch) {
             isDuplicate = true;
             duplicateReason = `Duplicate of row #${j + 1} in this batch (${prev.note || prev.category})`;
             duplicateSource = 'batch';

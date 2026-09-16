@@ -1,9 +1,13 @@
-import { callGeminiJSON } from './gemini.js';
+import { callAIJSON } from './aiRouter.js';
 import { sanitizeDate, getTodayStr } from '../utils/dates.js';
+import { MAX_MONEY_AMOUNT } from '../constants/finance.js';
 
 // Convert a File object to base64 string
 export const fileToBase64 = (file) => {
   return new Promise((resolve, reject) => {
+    if (file.size > 15 * 1024 * 1024) {
+      return reject(new Error(`File ${file.name} exceeds maximum size limit of 15MB`));
+    }
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -77,15 +81,23 @@ export const mapPaymentMethodAlias = (rawMethod, validIds) => {
  * Scans multiple screenshot files using Gemini Vision.
  * Reports progress per image and aggregates candidate transactions.
  */
-export async function scanBulkImages(files, apiKey, {
+export async function scanBulkImages(files, aiConfigOrKey, {
   today = getTodayStr(),
   expenseCategories = [],
   incomeSources = [],
   paymentMethods = [],
   onProgress = () => {},
 } = {}) {
-  if (!apiKey) {
-    return { success: false, error: 'No Gemini API key provided. Please set your API key in settings or switch to Manual Bulk Entry.', transactions: [] };
+  const isProxy = aiConfigOrKey && typeof aiConfigOrKey === 'object' && aiConfigOrKey.provider === 'proxy';
+  if (isProxy) {
+    if (!aiConfigOrKey.activeProxy) {
+      return { success: false, error: 'No active proxy configured. Please select or add an active proxy in AI settings.', transactions: [] };
+    }
+  } else {
+    const key = typeof aiConfigOrKey === 'string' ? aiConfigOrKey : aiConfigOrKey?.apiKey;
+    if (!key) {
+      return { success: false, error: 'No Gemini API key provided. Please set your API key in AI settings or switch to Manual Bulk Entry.', transactions: [] };
+    }
   }
 
   if (!files || files.length === 0) {
@@ -143,7 +155,7 @@ export async function scanBulkImages(files, apiKey, {
       { inlineData: { mimeType: base64Obj.mimeType, data: base64Obj.data } },
     ];
 
-    const ai = await callGeminiJSON(apiKey, parts);
+    const ai = await callAIJSON(aiConfigOrKey, parts);
 
     if (!ai.ok) {
       errors.push(`Failed on image ${i + 1} (${file.name}): ${ai.error}`);
@@ -157,7 +169,7 @@ export async function scanBulkImages(files, apiKey, {
     rawList.forEach((item, idx) => {
       const type = item.type === 'income' ? 'income' : 'expense';
       const parsedAmount = Number(item.amount);
-      const isAmountValid = Number.isFinite(parsedAmount) && parsedAmount > 0;
+      const isAmountValid = Number.isFinite(parsedAmount) && parsedAmount > 0 && parsedAmount <= MAX_MONEY_AMOUNT;
       const cleanDate = sanitizeDate(item.date, '');
       const isDateValid = Boolean(cleanDate);
 

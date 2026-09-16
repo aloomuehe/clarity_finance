@@ -11,6 +11,7 @@ export default function Reports({
   reportError,
   reportInsights,
   generateDetailedReport,
+  onDownloadPdf,
 }) {
   if (!showReport) return null;
   return (
@@ -40,7 +41,7 @@ export default function Reports({
             </div>
             <div className="flex gap-3">
               <button onClick={generateDetailedReport} className="flex-1 py-3 bg-slate-100 dk-bg-slate-800 hover:bg-slate-200 dk-hover-bg-slate-700 text-slate-800 dk-text-slate-200 font-bold rounded-xl flex items-center justify-center gap-2 no-print"><RefreshCw className="w-4 h-4" /> Regenerate</button>
-              <button onClick={() => window.print()} className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md no-print">Download as PDF</button>
+              <button onClick={onDownloadPdf || (() => window.print())} className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md no-print">Download as PDF</button>
             </div>
           </div>
         )}

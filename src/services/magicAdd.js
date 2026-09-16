@@ -1,6 +1,7 @@
 import { callGeminiJSON } from './gemini.js';
 import { parseQuickEntry } from '../utils/calculations.js';
 import { sanitizeDate } from '../utils/dates.js';
+import { MAX_MONEY_AMOUNT } from '../constants/finance.js';
 
 export async function processMagicAdd({
   prompt,
@@ -44,7 +45,7 @@ export async function processMagicAdd({
 
       draft = {
         type,
-        amount: Number.isFinite(aiAmount) && aiAmount > 0 ? aiAmount : local.amount,
+        amount: Number.isFinite(aiAmount) && aiAmount > 0 && aiAmount <= MAX_MONEY_AMOUNT ? aiAmount : local.amount,
         category: validCats.includes(d.category)
           ? d.category
           : (validCats.includes(local.category) ? local.category : (type === 'income' ? 'other_income' : 'other_expense')),
@@ -58,10 +59,10 @@ export async function processMagicAdd({
   }
 
   // 3) Guard rails before writing to state.
-  if (!draft.amount || !Number.isFinite(draft.amount) || draft.amount <= 0) {
+  if (!draft.amount || !Number.isFinite(draft.amount) || draft.amount <= 0 || draft.amount > MAX_MONEY_AMOUNT) {
     return {
       success: false,
-      error: 'Couldn\u2019t find an amount in that. Try "240 snacks" or "1000 salary".',
+      error: 'Couldn\u2019t find a valid amount in that. Try "240 snacks" or "1000 salary".',
     };
   }
 

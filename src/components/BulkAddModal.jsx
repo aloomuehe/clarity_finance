@@ -31,6 +31,7 @@ function BulkAddModalContent({
   onClose,
   onCommit,
   apiKey,
+  aiConfig,
   onOpenApiKeyModal,
   existingTransactions = [],
   expenseCategories = [],
@@ -39,6 +40,14 @@ function BulkAddModalContent({
   formatMoney = (n) => String(n),
   CurrencyIcon,
 }) {
+  const resolvedAiConfig = useMemo(() => {
+    if (aiConfig && typeof aiConfig === 'object') return aiConfig;
+    return { provider: 'gemini', apiKey: apiKey || '' };
+  }, [aiConfig, apiKey]);
+
+  const isProxy = resolvedAiConfig.provider === 'proxy';
+  const isConfigured = isProxy ? Boolean(resolvedAiConfig.activeProxy) : Boolean(resolvedAiConfig.apiKey);
+
   // Navigation mode: 'select' | 'scan' | 'manual' | 'review'
   const [mode, setMode] = useState('select');
 
@@ -131,10 +140,29 @@ function BulkAddModalContent({
 
   // File selection for scanning
   const handleFileChange = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length > 0) {
-      setSelectedFiles(prev => [...prev, ...files]);
+    const rawFiles = Array.from(e.target.files || []);
+    const validImageFiles = [];
+    const rejectedErrors = [];
+
+    rawFiles.forEach(file => {
+      const isImage = file.type?.startsWith('image/') || /\.(jpe?g|png|webp|bmp|gif)$/i.test(file.name);
+      if (!isImage) {
+        rejectedErrors.push(`"${file.name}" is not a supported image file.`);
+      } else if (file.size > 15 * 1024 * 1024) {
+        rejectedErrors.push(`"${file.name}" exceeds the 15MB limit.`);
+      } else {
+        validImageFiles.push(file);
+      }
+    });
+
+    if (rejectedErrors.length > 0) {
+      setScanError(rejectedErrors.join(' '));
+    } else {
       setScanError(null);
+    }
+
+    if (validImageFiles.length > 0) {
+      setSelectedFiles(prev => [...prev, ...validImageFiles]);
     }
   };
 
@@ -142,9 +170,9 @@ function BulkAddModalContent({
     setSelectedFiles(prev => prev.filter((_, i) => i !== idx));
   };
 
-  // Trigger Gemini AI scanning
+  // Trigger AI scanning
   const handleRunScan = async () => {
-    if (!apiKey) {
+    if (!isConfigured) {
       if (onOpenApiKeyModal) onOpenApiKeyModal();
       return;
     }
@@ -155,7 +183,7 @@ function BulkAddModalContent({
     setScanProgress({ current: 0, total: selectedFiles.length, status: 'Preparing screenshots...' });
 
     try {
-      const res = await scanBulkImages(selectedFiles, apiKey, {
+      const res = await scanBulkImages(selectedFiles, resolvedAiConfig, {
         today: getTodayStr(),
         expenseCategories,
         incomeSources,
@@ -345,12 +373,35 @@ function BulkAddModalContent({
                 </div>
               </div>
 
-              {/* API Key Missing Notice */}
-              {!apiKey && (
+              {/* Active Connection Info Badge */}
+              <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-100 dk-bg-slate-900 border border-slate-200 dk-border-slate-800 text-xs">
+                <div className="flex items-center gap-2 truncate">
+                  <span className="text-slate-500 dk-text-slate-400">AI Connection:</span>
+                  <span className="font-bold text-slate-800 dk-text-slate-200 truncate">
+                    {isProxy
+                      ? (resolvedAiConfig.activeProxy ? `${resolvedAiConfig.activeProxy.name} (${resolvedAiConfig.activeProxy.model})` : 'Proxy (None selected)')
+                      : 'Google Gemini (Direct)'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={onOpenApiKeyModal}
+                  className="text-xs font-bold text-indigo-600 dk-text-indigo-400 hover:underline shrink-0"
+                >
+                  Change
+                </button>
+              </div>
+
+              {/* Unconfigured Notice */}
+              {!isConfigured && (
                 <div className="p-4 rounded-2xl bg-indigo-50 dk-bg-indigo-900-20 border border-indigo-200 dk-border-indigo-800 text-xs sm:text-sm text-indigo-900 dk-text-indigo-200 flex items-center justify-between gap-4 flex-wrap">
                   <div className="flex items-center gap-2">
                     <Key className="w-4 h-4 text-indigo-600 dk-text-indigo-400 shrink-0" />
-                    <span>A Gemini API key is required for AI Screenshot scanning.</span>
+                    <span>
+                      {isProxy
+                        ? 'An active proxy configuration is required for AI Screenshot scanning.'
+                        : 'A Gemini API key is required for AI Screenshot scanning.'}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -358,7 +409,7 @@ function BulkAddModalContent({
                       onClick={onOpenApiKeyModal}
                       className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-colors shadow-sm"
                     >
-                      Set API Key
+                      {isProxy ? 'Select Proxy' : 'Set API Key'}
                     </button>
                     <button
                       type="button"
@@ -469,17 +520,21 @@ function BulkAddModalContent({
                 </div>
               )}
 
-              {/* Error fallback with Try Again & Manual Entry (Requirement 6) */}
+              {/* Error fallback with Try Again & Manual Entry (Requirements 6 & 23) */}
               {scanError && (
                 <div className="p-4 rounded-2xl bg-rose-50 dk-bg-rose-900-20 border border-rose-200 dk-border-slate-700 text-rose-900 dk-text-rose-300 space-y-3">
                   <div className="flex items-start gap-2.5 text-xs sm:text-sm">
                     <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-bold">Couldn&apos;t scan these images right now.</p>
+                      <p className="font-bold">
+                        {isProxy
+                          ? "Couldn't scan these images using the active proxy."
+                          : "Couldn't scan these images right now."}
+                      </p>
                       <p className="text-xs opacity-90 mt-0.5">{scanError}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 pt-1">
+                  <div className="flex items-center gap-2 pt-1 flex-wrap">
                     <button
                       type="button"
                       onClick={handleRunScan}
@@ -488,6 +543,15 @@ function BulkAddModalContent({
                     >
                       Try Again
                     </button>
+                    {isProxy && (
+                      <button
+                        type="button"
+                        onClick={onOpenApiKeyModal}
+                        className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-colors shadow-sm"
+                      >
+                        Switch Proxy
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={handleStartManual}
@@ -512,7 +576,7 @@ function BulkAddModalContent({
                 <button
                   type="button"
                   onClick={handleRunScan}
-                  disabled={isScanning || selectedFiles.length === 0 || !apiKey}
+                  disabled={isScanning || selectedFiles.length === 0 || !isConfigured}
                   className="px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm transition-all shadow-md flex items-center gap-2 disabled:opacity-50"
                 >
                   {isScanning ? (

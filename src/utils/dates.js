@@ -1,7 +1,8 @@
+const pad2 = (n) => String(n).padStart(2, '0');
+
 export const getTodayStr = () => {
   const d = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 };
 
 export const sanitizeDate = (value, fallback) => {
@@ -20,11 +21,8 @@ export const sanitizeDate = (value, fallback) => {
 export const shiftDate = (baseStr, days) => {
   const d = new Date(`${baseStr}T00:00:00`);
   d.setDate(d.getDate() + days);
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 };
-
-const pad2 = (n) => String(n).padStart(2, '0');
 
 // Timezone-safe. "2026-09-03" -> "2026-09" without ever touching UTC, and Date
 // objects are read in LOCAL time. The old version used toISOString(), which in

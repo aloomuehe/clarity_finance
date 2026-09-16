@@ -50,11 +50,23 @@ import Loans from './components/Loans';
 import Goals from './components/Goals';
 import Reports from './components/Reports';
 import MonthPicker from './components/MonthPicker';
-import ApiKeyModal from './components/ApiKeyModal';
+import AiSettingsModal from './components/AiSettingsModal';
 import HeatmapModal from './components/HeatmapModal';
 import TrendModal from './components/TrendModal';
 import BulkAddModal from './components/BulkAddModal';
+import ReceiptReviewModal from './components/ReceiptReviewModal';
+import MonthlyFinancialReport from './components/MonthlyFinancialReport';
 import { validateBulkBatch } from './utils/bulkValidation';
+import {
+  loadAIProvider,
+  saveAIProvider,
+  loadProxyConfigs,
+  saveProxyConfigs,
+  loadActiveProxyId,
+  saveActiveProxyId,
+  getActiveProxy,
+  deleteProxyConfig,
+} from './utils/proxyStorage';
 
 const applyTheme = (dark) => {
   const root = document.documentElement;
@@ -76,16 +88,69 @@ export default function App() {
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [tempApiKey, setTempApiKey] = useState('');
 
+  const [aiProvider, setAiProvider] = useState(loadAIProvider);
+  const [proxyConfigs, setProxyConfigs] = useState(loadProxyConfigs);
+  const [activeProxyId, setActiveProxyId] = useState(loadActiveProxyId);
+
+  const activeProxy = useMemo(() => getActiveProxy(proxyConfigs, activeProxyId), [proxyConfigs, activeProxyId]);
+  const aiConfig = useMemo(() => ({
+    provider: aiProvider,
+    apiKey,
+    activeProxy,
+  }), [aiProvider, apiKey, activeProxy]);
+
+  const handleSelectProvider = (newProvider) => {
+    setAiProvider(newProvider);
+    saveAIProvider(newProvider);
+  };
+
+  const handleSaveProxyConfig = (config) => {
+    setProxyConfigs(prev => {
+      const existingIdx = prev.findIndex(c => c.id === config.id);
+      let updated;
+      if (existingIdx !== -1) {
+        updated = [...prev];
+        updated[existingIdx] = config;
+      } else {
+        updated = [...prev, config];
+      }
+      saveProxyConfigs(updated);
+      return updated;
+    });
+    if (!activeProxyId) {
+      setActiveProxyId(config.id);
+      saveActiveProxyId(config.id);
+    }
+    setToast({ message: `Proxy "${config.name}" saved.` });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleDeleteProxyConfig = (idToDelete) => {
+    const target = proxyConfigs.find(c => c.id === idToDelete);
+    const { updatedConfigs, newActiveId } = deleteProxyConfig(proxyConfigs, activeProxyId, idToDelete);
+    setProxyConfigs(updatedConfigs);
+    saveProxyConfigs(updatedConfigs);
+    setActiveProxyId(newActiveId);
+    saveActiveProxyId(newActiveId);
+    setToast({ message: `Proxy "${target?.name || 'configuration'}" deleted.` });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleSetActiveProxy = (id) => {
+    setActiveProxyId(id);
+    saveActiveProxyId(id);
+    const target = proxyConfigs.find(c => c.id === id);
+    setToast({ message: `Active proxy set to "${target?.name || 'Selected'}".` });
+    setTimeout(() => setToast(null), 3000);
+  };
+
   const [transactions, setTransactions] = useState(() => {
     const loaded = loadLS('transactions', []);
     if (!Array.isArray(loaded)) return [];
-    return loaded.map(t => {
-      if (!t || typeof t !== 'object') return t;
-      return {
-        ...t,
-        amount: Math.abs(Number(t.amount) || 0),
-      };
-    });
+    return loaded.filter(t => t && typeof t === 'object' && (t.type === 'income' || t.type === 'expense')).map(t => ({
+      ...t,
+      amount: Math.abs(Number(t.amount) || 0),
+    }));
   });
 
   const [formData, setFormData] = useState({
@@ -112,21 +177,44 @@ export default function App() {
   const [recurring, setRecurring] = useState(() => {
     const saved = loadLS('recurring', []);
     if (!Array.isArray(saved)) return [];
-    return saved.map((r, i) => (r && r.id ? r : { ...r, id: `recurring-legacy-${i + 1}` }));
+    return saved.filter(r => r && typeof r === 'object').map((r, i) => (r && r.id ? r : { ...r, id: `recurring-legacy-${i + 1}` }));
   });
   const [processedRecurring, setProcessedRecurring] = useState(() => loadLS('recurring_processed', []));
   const [recurringErrors, setRecurringErrors] = useState([]);
-  const [planned, setPlanned] = useState(() => loadLS('planned', []));
+  const [planned, setPlanned] = useState(() => {
+    const loaded = loadLS('planned', []);
+    if (!Array.isArray(loaded)) return [];
+    return loaded.filter(p => p && typeof p === 'object').map(p => ({
+      ...p,
+      amount: Math.abs(Number(p.amount) || 0),
+    }));
+  });
   const [recurringForm, setRecurringForm] = useState({ name: '', amount: '', day: '1', category: 'utilities' });
   const [plannedForm, setPlannedForm] = useState({ name: '', amount: '', date: getTodayStr(), category: 'other_expense' });
   const [editingRecurringId, setEditingRecurringId] = useState(null);
   const [editingPlannedId, setEditingPlannedId] = useState(null);
 
-  const [loans, setLoans] = useState(() => loadLS('loans', []));
+  const [loans, setLoans] = useState(() => {
+    const loaded = loadLS('loans', []);
+    if (!Array.isArray(loaded)) return [];
+    return loaded.filter(l => l && typeof l === 'object').map(l => ({
+      ...l,
+      amount: Math.abs(Number(l.amount) || 0),
+      amountPaid: Math.min(Math.abs(Number(l.amount) || 0), Math.max(0, Number(l.amountPaid) || 0)),
+    }));
+  });
   const [loanForm, setLoanForm] = useState({ type: 'lent', person: '', amount: '', date: getTodayStr(), note: '' });
   const [paymentInputs, setPaymentInputs] = useState({});
 
-  const [goals, setGoals] = useState(() => loadLS('goals', []));
+  const [goals, setGoals] = useState(() => {
+    const loaded = loadLS('goals', []);
+    if (!Array.isArray(loaded)) return [];
+    return loaded.filter(g => g && typeof g === 'object').map(g => ({
+      ...g,
+      target: Math.abs(Number(g.target) || 0),
+      current: Math.min(Math.abs(Number(g.target) || 0), Math.max(0, Number(g.current) || 0)),
+    }));
+  });
   const [goalForm, setGoalForm] = useState({ name: '', target: '', current: '' });
   const [goalInputs, setGoalInputs] = useState({});
 
@@ -148,6 +236,7 @@ export default function App() {
   const [isHeatmapOpen, setIsHeatmapOpen] = useState(false);
   const [isTrendOpen, setIsTrendOpen] = useState(false);
   const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
+  const [receiptReviewData, setReceiptReviewData] = useState(null);
   const [heatmapThresholds, setHeatmapThresholds] = useState(loadHeatmapThresholds);
   const [heatmapDraft, setHeatmapDraft] = useState(heatmapThresholds);
   const [heatmapValidationError, setHeatmapValidationError] = useState('');
@@ -247,9 +336,19 @@ export default function App() {
     [transactions, selectedMonth, filter, searchQuery]
   );
 
+  const monthTransactions = useMemo(
+    () => filterTransactions(transactions, selectedMonth, 'all', '', INCOME_SOURCES, EXPENSE_CATEGORIES),
+    [transactions, selectedMonth]
+  );
+
   const expensesByCategory = useMemo(
     () => calculateExpensesByCategory(displayTransactions, currentMonthData.expense, EXPENSE_CATEGORIES),
     [displayTransactions, currentMonthData.expense]
+  );
+
+  const reportExpensesByCategory = useMemo(
+    () => calculateExpensesByCategory(monthTransactions, currentMonthData.expense, EXPENSE_CATEGORIES),
+    [monthTransactions, currentMonthData.expense]
   );
 
   const warnings = useMemo(
@@ -359,6 +458,13 @@ export default function App() {
         return;
       }
     }
+    if (formData.type === 'income' && editingId) {
+      const availableWithout = getAvailableBalance(editingId);
+      if (availableWithout + grossAmount < 0) {
+        setToast({ message: `Cannot reduce income below already spent balance. Minimum required: ${formatMoney(Math.abs(availableWithout))}.` });
+        return;
+      }
+    }
     let amountNum = grossAmount;
     let splitLoan = null;
     if (formData.type === 'expense' && isSplit && splitDetails.amount && splitDetails.person && !editingId) {
@@ -409,6 +515,17 @@ export default function App() {
 
   const deleteTransaction = (id) => {
     const tToDelete = transactions.find(t => t.id === id);
+    if (!tToDelete) return;
+
+    if (tToDelete.type === 'income') {
+      const availableWithout = getAvailableBalance(id);
+      if (availableWithout < 0) {
+        setToast({ message: `Cannot delete income: funds have already been spent (would leave balance at ${formatMoney(availableWithout)}).` });
+        setTimeout(() => setToast(null), 4000);
+        return;
+      }
+    }
+
     if (tToDelete?.recurringId && tToDelete?.recurringOccurrence) {
       const key = `${tToDelete.recurringId}:${tToDelete.recurringOccurrence}`;
       setProcessedRecurring(prev => (prev.includes(key) ? prev : [...prev, key]));
@@ -573,6 +690,17 @@ export default function App() {
     if (loan.principalTransactionId) linkedIds.add(loan.principalTransactionId);
     (loan.repaymentTransactionIds || []).forEach(id => linkedIds.add(id));
     const linkedTransactions = transactions.filter(transaction => linkedIds.has(transaction.id));
+
+    // Guard: deleting a borrowed loan removes income; verify balance does not drop negative
+    const resultingBalance = transactions
+      .filter(transaction => !linkedIds.has(transaction.id))
+      .reduce((acc, t) => acc + (t.type === 'income' ? Math.abs(Number(t.amount) || 0) : -Math.abs(Number(t.amount) || 0)), 0);
+    if (resultingBalance < 0) {
+      setToast({ message: `Cannot delete loan: borrowed funds have already been spent (would leave balance at ${formatMoney(resultingBalance)}).` });
+      setTimeout(() => setToast(null), 4000);
+      return;
+    }
+
     setLoans(prev => prev.filter(item => item.id !== loan.id));
     setTransactions(prev => prev.filter(transaction => !linkedIds.has(transaction.id)));
     setToast({
@@ -671,52 +799,198 @@ export default function App() {
   };
 
   const handleImport = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 20 * 1024 * 1024) {
+      setToast({ message: 'Backup file is too large (max 20MB).' });
+      setTimeout(() => setToast(null), 4000);
+      if (e.target) e.target.value = '';
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
         const data = JSON.parse(event.target.result);
-        if (!data || typeof data !== 'object' || !Array.isArray(data.transactions)) throw new Error('Invalid backup');
+        if (!data || typeof data !== 'object' || !Array.isArray(data.transactions)) throw new Error('Invalid backup format');
         const isStoredDate = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(new Date(`${value}T00:00:00`).getTime());
-        const validTransactions = data.transactions.filter(item => item && (item.type === 'income' || item.type === 'expense') && Number.isFinite(Number(item.amount)) && Number(item.amount) > 0 && Number(item.amount) <= MAX_MONEY_AMOUNT && isStoredDate(item.date));
-        if (data.transactions.length > 0 && validTransactions.length === 0) throw new Error('No valid transactions');
-        setTransactions(validTransactions.map(item => ({ ...item, amount: Number(item.amount) })));
-        if (Array.isArray(data.loans)) setLoans(data.loans.filter(item => item && (item.type === 'lent' || item.type === 'borrowed') && Number.isFinite(Number(item.amount)) && Number(item.amount) > 0 && Number(item.amount) <= MAX_MONEY_AMOUNT).map(item => ({
-          ...item,
-          amount: Number(item.amount),
-          amountPaid: Math.min(Number(item.amount), Math.max(0, Number(item.amountPaid) || 0)),
-          cashTransactionIds: Array.isArray(item.cashTransactionIds) ? item.cashTransactionIds.filter(Boolean) : item.cashTransactionIds,
-          repaymentTransactionIds: Array.isArray(item.repaymentTransactionIds) ? item.repaymentTransactionIds.filter(Boolean) : item.repaymentTransactionIds,
-        })));
-        if (Array.isArray(data.goals)) setGoals(data.goals.filter(item => item && typeof item.name === 'string' && Number.isFinite(Number(item.target)) && Number(item.target) > 0 && Number(item.target) <= MAX_MONEY_AMOUNT).map(item => ({ ...item, target: Number(item.target), current: Math.min(Number(item.target), Math.max(0, Number(item.current) || 0)) })));
-        if (data.categoryTargets && typeof data.categoryTargets === 'object' && !Array.isArray(data.categoryTargets)) setCategoryTargets(Object.fromEntries(Object.entries(data.categoryTargets).filter(([, value]) => Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= MAX_MONEY_AMOUNT).map(([key, value]) => [key, Number(value)])));
-        if (Array.isArray(data.recurring)) setRecurring(data.recurring.filter(item => item && typeof item.name === 'string' && Number.isFinite(Number(item.amount)) && Number(item.amount) > 0 && Number(item.amount) <= MAX_MONEY_AMOUNT && Number.isInteger(Number(item.day)) && Number(item.day) >= 1 && Number(item.day) <= 31).map((item, i) => ({ ...item, id: item.id || `recurring-${i + 1}`, amount: Number(item.amount), day: Number(item.day) })));
-        if (Array.isArray(data.planned)) setPlanned(data.planned.filter(item => item && typeof item.name === 'string' && Number.isFinite(Number(item.amount)) && Number(item.amount) > 0 && Number(item.amount) <= MAX_MONEY_AMOUNT && isStoredDate(item.date)).map(item => ({ ...item, amount: Number(item.amount) })));
+
+        // Stage & validate transactions with ID de-duplication
+        const seenTxIds = new Set();
+        const stagedTransactions = [];
+        for (const item of data.transactions) {
+          if (!item || typeof item !== 'object') continue;
+          if (item.type !== 'income' && item.type !== 'expense') continue;
+          const amt = Number(item.amount);
+          if (!Number.isFinite(amt) || amt <= 0 || amt > MAX_MONEY_AMOUNT) continue;
+          if (!isStoredDate(item.date)) continue;
+
+          let id = typeof item.id === 'string' && item.id.trim() ? item.id.trim() : null;
+          if (!id || seenTxIds.has(id)) {
+            id = nextId('tx-import');
+          }
+          seenTxIds.add(id);
+
+          stagedTransactions.push({
+            id,
+            type: item.type,
+            amount: amt,
+            category: typeof item.category === 'string' ? item.category : (item.type === 'income' ? 'other_income' : 'other_expense'),
+            date: item.date,
+            paymentMethod: typeof item.paymentMethod === 'string' ? item.paymentMethod : 'upi',
+            note: typeof item.note === 'string' ? item.note : '',
+            ...(item.linkedLoanId && { linkedLoanId: item.linkedLoanId }),
+            ...(item.loanMovement && { loanMovement: item.loanMovement }),
+            ...(item.recurringId && { recurringId: item.recurringId }),
+            ...(item.recurringOccurrence && { recurringOccurrence: item.recurringOccurrence }),
+            ...(item.isRecurring && { isRecurring: true }),
+          });
+        }
+        if (data.transactions.length > 0 && stagedTransactions.length === 0) {
+          throw new Error('No valid transactions in backup');
+        }
+
+        // Stage & validate loans
+        let stagedLoans = null;
+        if (Array.isArray(data.loans)) {
+          stagedLoans = data.loans.filter(item => {
+            if (!item || typeof item !== 'object') return false;
+            if (item.type !== 'lent' && item.type !== 'borrowed') return false;
+            const amt = Number(item.amount);
+            return Number.isFinite(amt) && amt > 0 && amt <= MAX_MONEY_AMOUNT && typeof item.person === 'string' && item.person.trim();
+          }).map(item => {
+            const amt = Number(item.amount);
+            return {
+              id: typeof item.id === 'string' && item.id.trim() ? item.id.trim() : nextId('loan-import'),
+              type: item.type,
+              person: item.person.trim(),
+              amount: amt,
+              amountPaid: Math.min(amt, Math.max(0, Number(item.amountPaid) || 0)),
+              date: isStoredDate(item.date) ? item.date : getTodayStr(),
+              note: typeof item.note === 'string' ? item.note : '',
+              principalTransactionId: item.principalTransactionId || null,
+              cashTransactionIds: Array.isArray(item.cashTransactionIds) ? item.cashTransactionIds.filter(Boolean) : [],
+              repaymentTransactionIds: Array.isArray(item.repaymentTransactionIds) ? item.repaymentTransactionIds.filter(Boolean) : [],
+            };
+          });
+        }
+
+        // Stage & validate goals
+        let stagedGoals = null;
+        if (Array.isArray(data.goals)) {
+          stagedGoals = data.goals.filter(item => {
+            if (!item || typeof item !== 'object') return false;
+            const target = Number(item.target);
+            return typeof item.name === 'string' && item.name.trim() && Number.isFinite(target) && target > 0 && target <= MAX_MONEY_AMOUNT;
+          }).map(item => {
+            const target = Number(item.target);
+            return {
+              id: typeof item.id === 'string' && item.id.trim() ? item.id.trim() : nextId('goal-import'),
+              name: item.name.trim(),
+              target,
+              current: Math.min(target, Math.max(0, Number(item.current) || 0)),
+            };
+          });
+        }
+
+        // Stage categoryTargets
+        let stagedCategoryTargets = null;
+        if (data.categoryTargets && typeof data.categoryTargets === 'object' && !Array.isArray(data.categoryTargets)) {
+          stagedCategoryTargets = Object.fromEntries(
+            Object.entries(data.categoryTargets)
+              .filter(([, value]) => Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= MAX_MONEY_AMOUNT)
+              .map(([key, value]) => [key, Number(value)])
+          );
+        }
+
+        // Stage recurring
+        let stagedRecurring = null;
+        if (Array.isArray(data.recurring)) {
+          stagedRecurring = data.recurring.filter(item => {
+            if (!item || typeof item !== 'object') return false;
+            const amt = Number(item.amount);
+            const day = Number(item.day);
+            return typeof item.name === 'string' && item.name.trim() && Number.isFinite(amt) && amt > 0 && amt <= MAX_MONEY_AMOUNT && Number.isInteger(day) && day >= 1 && day <= 31;
+          }).map((item, i) => ({
+            id: typeof item.id === 'string' && item.id.trim() ? item.id.trim() : `recurring-${i + 1}`,
+            name: item.name.trim(),
+            amount: Number(item.amount),
+            day: Number(item.day),
+            category: typeof item.category === 'string' ? item.category : 'utilities',
+          }));
+        }
+
+        // Stage planned
+        let stagedPlanned = null;
+        if (Array.isArray(data.planned)) {
+          stagedPlanned = data.planned.filter(item => {
+            if (!item || typeof item !== 'object') return false;
+            const amt = Number(item.amount);
+            return typeof item.name === 'string' && item.name.trim() && Number.isFinite(amt) && amt > 0 && amt <= MAX_MONEY_AMOUNT && isStoredDate(item.date);
+          }).map(item => ({
+            id: typeof item.id === 'string' && item.id.trim() ? item.id.trim() : nextId('planned-import'),
+            name: item.name.trim(),
+            amount: Number(item.amount),
+            date: item.date,
+            category: typeof item.category === 'string' ? item.category : 'other_expense',
+          }));
+        }
+
+        // Stage processedRecurring
+        let stagedProcessedRecurring = null;
         if (Array.isArray(data.processedRecurring)) {
-          setProcessedRecurring(data.processedRecurring.filter(item => typeof item === 'string'));
+          stagedProcessedRecurring = data.processedRecurring.filter(item => typeof item === 'string');
         } else {
-          const fromTransactions = validTransactions
+          stagedProcessedRecurring = stagedTransactions
             .filter(item => item?.recurringId && item?.recurringOccurrence)
             .map(item => `${item.recurringId}:${item.recurringOccurrence}`);
-          setProcessedRecurring(fromTransactions);
         }
-        if (Number.isFinite(Number(data.monthlyTarget)) && Number(data.monthlyTarget) >= 0) setMonthlyTarget(Number(data.monthlyTarget));
-        if (CURRENCIES.some(item => item.code === data.currency)) setCurrency(data.currency);
-        if (typeof data.selectedMonth === 'string' && /^\d{4}-\d{2}$/.test(data.selectedMonth)) setSelectedMonth(data.selectedMonth);
-        if (isValidHeatmapThresholds(data.heatmapThresholds)) {
-          const restoredThresholds = { green: Number(data.heatmapThresholds.green), yellow: Number(data.heatmapThresholds.yellow), orange: Number(data.heatmapThresholds.orange) };
-          setHeatmapThresholds(restoredThresholds);
-          setHeatmapDraft(restoredThresholds);
+
+        // Stage scalar settings
+        const stagedMonthlyTarget = (Number.isFinite(Number(data.monthlyTarget)) && Number(data.monthlyTarget) >= 0 && Number(data.monthlyTarget) <= MAX_MONEY_AMOUNT)
+          ? Number(data.monthlyTarget)
+          : null;
+        const stagedCurrency = CURRENCIES.some(item => item.code === data.currency) ? data.currency : null;
+        const stagedSelectedMonth = (typeof data.selectedMonth === 'string' && /^\d{4}-\d{2}$/.test(data.selectedMonth))
+          ? data.selectedMonth
+          : null;
+        const stagedHeatmap = isValidHeatmapThresholds(data.heatmapThresholds)
+          ? { green: Number(data.heatmapThresholds.green), yellow: Number(data.heatmapThresholds.yellow), orange: Number(data.heatmapThresholds.orange) }
+          : null;
+
+        // ATOMIC COMMIT: Apply all updates only after all staged validations succeed
+        setTransactions(stagedTransactions);
+        if (stagedLoans !== null) setLoans(stagedLoans);
+        if (stagedGoals !== null) setGoals(stagedGoals);
+        if (stagedCategoryTargets !== null) setCategoryTargets(stagedCategoryTargets);
+        if (stagedRecurring !== null) setRecurring(stagedRecurring);
+        if (stagedPlanned !== null) setPlanned(stagedPlanned);
+        if (stagedProcessedRecurring !== null) setProcessedRecurring(stagedProcessedRecurring);
+        if (stagedMonthlyTarget !== null) setMonthlyTarget(stagedMonthlyTarget);
+        if (stagedCurrency !== null) setCurrency(stagedCurrency);
+        if (stagedSelectedMonth !== null) setSelectedMonth(stagedSelectedMonth);
+        if (stagedHeatmap !== null) {
+          setHeatmapThresholds(stagedHeatmap);
+          setHeatmapDraft(stagedHeatmap);
         }
+
         setToast({ message: 'Backup completely restored!' });
       } catch {
         setToast({ message: 'Invalid backup file!' });
+      } finally {
+        if (e.target) e.target.value = '';
+        setTimeout(() => setToast(null), 4000);
       }
+    };
+    reader.onerror = () => {
+      setToast({ message: 'Failed to read backup file.' });
       setTimeout(() => setToast(null), 4000);
     };
     reader.readAsText(file);
   };
+
+  useEffect(() => {
+    document.title = `Clarity Finance - Monthly Report (${monthLabel(selectedMonth)})`;
+  }, [selectedMonth]);
 
   const handlePrint = () => {
     try {
@@ -728,19 +1002,39 @@ export default function App() {
   };
 
   const handleFileUpload = async (e) => {
-    if (!apiKey) {
+    const isProxy = aiProvider === 'proxy';
+    const isConfigured = isProxy ? Boolean(activeProxy) : Boolean(apiKey);
+    if (!isConfigured) {
       setShowApiKeyModal(true);
       return;
     }
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > 15 * 1024 * 1024) {
+      setToast({ message: 'Receipt image exceeds 15MB limit.' });
+      setTimeout(() => setToast(null), 4000);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    const isImage = file.type?.startsWith('image/') || /\.(jpe?g|png|webp|bmp|gif)$/i.test(file.name);
+    if (!isImage) {
+      setToast({ message: 'Please upload a valid image file (PNG, JPG, WebP).' });
+      setTimeout(() => setToast(null), 4000);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
     setIsScanning(true);
     const today = getTodayStr();
     try {
-      const res = await scanReceipt(file, apiKey, today, EXPENSE_CATEGORIES);
+      const res = await scanReceipt(file, aiConfig, today, EXPENSE_CATEGORIES);
       if (res.success) {
-        setFormData(prev => ({ ...prev, ...res.data }));
-        setToast({ message: 'Receipt scanned! Please confirm details below.' });
+        if (res.data?.items && res.data.items.length > 0) {
+          setReceiptReviewData(res.data);
+        } else {
+          setToast({ message: 'No items detected on this receipt.' });
+        }
       } else {
         setToast({ message: `Failed to scan receipt: ${res.error}` });
       }
@@ -902,52 +1196,71 @@ export default function App() {
   return (
     <div className="theme-container min-h-screen bg-slate-50 dk-bg-slate-900 text-slate-900 dk-text-slate-100 font-sans transition-colors duration-300 selection:bg-indigo-100 dk-selection-bg-indigo-900-50 selection:text-indigo-900 dk-selection-text-indigo-100 print-container">
 
-      {transactionAnimation && (
-        <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50 flex items-center gap-3 text-5xl font-black drop-shadow-2xl no-print ${transactionAnimation.type === 'income' ? 'anim-income text-emerald-500' : 'anim-expense text-rose-500'}`}>
-          {transactionAnimation.type === 'income' ? '🤑' : '💸'} {transactionAnimation.type === 'income' ? '+' : '-'}{formatMoney(transactionAnimation.amount)}
-        </div>
-      )}
+      <MonthlyFinancialReport
+        selectedMonth={selectedMonth}
+        monthLabel={monthLabel}
+        currentMonthData={currentMonthData}
+        previousMonthData={previousMonthData}
+        balance={balance}
+        monthlyTarget={monthlyTarget}
+        categoryTargets={categoryTargets}
+        financialHealth={financialHealth}
+        dailyAverage={dailyAverage}
+        noSpendStreak={noSpendStreak}
+        daysRemainingInfo={daysRemainingInfo}
+        frequentCategory={frequentCategory}
+        expensesByCategory={reportExpensesByCategory}
+        monthTransactions={monthTransactions}
+        reportInsights={reportInsights}
+        formatMoney={formatMoney}
+        currency={currency}
+        expenseCategories={EXPENSE_CATEGORIES}
+        incomeSources={INCOME_SOURCES}
+        paymentMethods={PAYMENT_METHODS}
+      />
 
-      <nav className="bg-white/90 dk-bg-slate-900-80 border-b border-slate-200 dk-border-slate-800 sticky top-0 z-40 shadow-sm backdrop-blur-md transition-colors duration-300 no-print">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-indigo-600 dk-text-indigo-400">
-            <Activity className="w-6 h-6 shrink-0" />
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 dk-text-white hidden lg:block">Clarity Finance</h1>
+      <div className="web-app-view">
+        {transactionAnimation && (
+          <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50 flex items-center gap-3 text-5xl font-black drop-shadow-2xl no-print ${transactionAnimation.type === 'income' ? 'anim-income text-emerald-500' : 'anim-expense text-rose-500'}`}>
+            {transactionAnimation.type === 'income' ? '🤑' : '💸'} {transactionAnimation.type === 'income' ? '+' : '-'}{formatMoney(transactionAnimation.amount)}
+          </div>
+        )}
 
-            <div className="flex bg-slate-100 dk-bg-slate-800 p-1 rounded-xl ml-2 lg:ml-6 overflow-x-auto max-w-full">
-              <button onClick={() => setActiveTab('dashboard')} className={`px-3 sm:px-4 py-1.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${activeTab === 'dashboard' ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-400 shadow-sm' : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-slate-200'}`}>Dashboard</button>
-              <button onClick={() => setActiveTab('forecast')} className={`px-3 sm:px-4 py-1.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${activeTab === 'forecast' ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-400 shadow-sm' : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-slate-200'}`}>Forecast</button>
-              <button onClick={() => setActiveTab('loans')} className={`px-3 sm:px-4 py-1.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${activeTab === 'loans' ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-400 shadow-sm' : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-slate-200'}`}>Loans</button>
-              <button onClick={() => setActiveTab('goals')} className={`px-3 sm:px-4 py-1.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${activeTab === 'goals' ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-400 shadow-sm' : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-slate-200'}`}>Goals</button>
+        <nav className="bg-white/90 dk-bg-slate-900-80 border-b border-slate-200 dk-border-slate-800 sticky top-0 z-40 shadow-sm backdrop-blur-md transition-colors duration-300 no-print">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-indigo-600 dk-text-indigo-400">
+              <Activity className="w-6 h-6 shrink-0" />
+              <h1 className="text-xl font-bold tracking-tight text-slate-900 dk-text-white hidden lg:block">Clarity Finance</h1>
+
+              <div className="flex bg-slate-100 dk-bg-slate-800 p-1 rounded-xl ml-2 lg:ml-6 overflow-x-auto max-w-full">
+                <button onClick={() => setActiveTab('dashboard')} className={`px-3 sm:px-4 py-1.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${activeTab === 'dashboard' ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-400 shadow-sm' : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-slate-200'}`}>Dashboard</button>
+                <button onClick={() => setActiveTab('forecast')} className={`px-3 sm:px-4 py-1.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${activeTab === 'forecast' ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-400 shadow-sm' : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-slate-200'}`}>Forecast</button>
+                <button onClick={() => setActiveTab('loans')} className={`px-3 sm:px-4 py-1.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${activeTab === 'loans' ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-400 shadow-sm' : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-slate-200'}`}>Loans</button>
+                <button onClick={() => setActiveTab('goals')} className={`px-3 sm:px-4 py-1.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${activeTab === 'goals' ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-400 shadow-sm' : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-slate-200'}`}>Goals</button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 sm:gap-4 text-sm font-medium text-slate-600 dk-text-slate-300">
+              <MonthPicker
+                selectedMonth={selectedMonth}
+                onSelectMonth={setSelectedMonth}
+                monthLabel={monthLabel}
+              />
+
+              <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="bg-slate-100 hover:bg-slate-200 dk-bg-slate-800 dk-hover-bg-slate-700 border-none rounded-xl px-3 py-2 text-sm font-bold text-slate-800 dk-text-slate-200 transition-all duration-300 ease-in-out cursor-pointer outline-none hover:shadow-sm focus:ring-2 focus:ring-indigo-500/50">
+                {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
+              </select>
+
+              <button onClick={() => { setTempApiKey(apiKey); setShowApiKeyModal(true); }} className="p-2 rounded-full hover:bg-slate-100 dk-hover-bg-slate-800 transition-colors text-indigo-600 dk-text-indigo-400" title="API Key Settings"><Key className="w-5 h-5" /></button>
+              <button onClick={handleExport} className="p-2 rounded-full hover:bg-slate-100 dk-hover-bg-slate-800 transition-colors text-slate-700 dk-text-slate-300" title="Backup Data"><DownloadCloud className="w-5 h-5" /></button>
+              <label className="p-2 rounded-full hover:bg-slate-100 dk-hover-bg-slate-800 transition-colors cursor-pointer text-slate-700 dk-text-slate-300" title="Restore Data"><Upload className="w-5 h-5" /><input type="file" accept=".json" onChange={handleImport} className="hidden" /></label>
+              <button onClick={handlePrint} className="p-2 rounded-full hover:bg-slate-100 dk-hover-bg-slate-800 transition-colors text-slate-700 dk-text-slate-300" title="Download Monthly PDF"><Download className="w-5 h-5" /></button>
+              <button onClick={toggleDarkMode} className="p-2 rounded-full hover:bg-slate-100 dk-hover-bg-slate-800 transition-colors text-slate-700 dk-text-slate-300" title="Toggle Theme">{isDarkMode ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-indigo-600" />}</button>
             </div>
           </div>
+        </nav>
 
-          <div className="flex items-center gap-2 sm:gap-4 text-sm font-medium text-slate-600 dk-text-slate-300">
-            <MonthPicker
-              selectedMonth={selectedMonth}
-              onSelectMonth={setSelectedMonth}
-              monthLabel={monthLabel}
-            />
-
-            <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="bg-slate-100 hover:bg-slate-200 dk-bg-slate-800 dk-hover-bg-slate-700 border-none rounded-xl px-3 py-2 text-sm font-bold text-slate-800 dk-text-slate-200 transition-all duration-300 ease-in-out cursor-pointer outline-none hover:shadow-sm focus:ring-2 focus:ring-indigo-500/50">
-              {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
-            </select>
-
-            <button onClick={() => { setTempApiKey(apiKey); setShowApiKeyModal(true); }} className="p-2 rounded-full hover:bg-slate-100 dk-hover-bg-slate-800 transition-colors text-indigo-600 dk-text-indigo-400" title="API Key Settings"><Key className="w-5 h-5" /></button>
-            <button onClick={handleExport} className="p-2 rounded-full hover:bg-slate-100 dk-hover-bg-slate-800 transition-colors text-slate-700 dk-text-slate-300" title="Backup Data"><DownloadCloud className="w-5 h-5" /></button>
-            <label className="p-2 rounded-full hover:bg-slate-100 dk-hover-bg-slate-800 transition-colors cursor-pointer text-slate-700 dk-text-slate-300" title="Restore Data"><Upload className="w-5 h-5" /><input type="file" accept=".json" onChange={handleImport} className="hidden" /></label>
-            <button onClick={handlePrint} className="p-2 rounded-full hover:bg-slate-100 dk-hover-bg-slate-800 transition-colors text-slate-700 dk-text-slate-300" title="Download Monthly PDF"><Download className="w-5 h-5" /></button>
-            <button onClick={toggleDarkMode} className="p-2 rounded-full hover:bg-slate-100 dk-hover-bg-slate-800 transition-colors text-slate-700 dk-text-slate-300" title="Toggle Theme">{isDarkMode ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-indigo-600" />}</button>
-          </div>
-        </div>
-      </nav>
-
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-
-        <div className="hidden print-only mb-8 border-b pb-4">
-          <h1 className="text-3xl font-bold text-black">Financial Report</h1>
-          <p className="text-lg text-gray-600">Month: {monthLabel(selectedMonth)}</p>
-        </div>
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
         {warnings.length > 0 && activeTab === 'dashboard' && (
           <div className="animate-fade-in-up space-y-2 no-print">
@@ -1067,9 +1380,24 @@ export default function App() {
 
       </main>
 
-      <ApiKeyModal
+      <AiSettingsModal
         open={showApiKeyModal}
         onClose={() => setShowApiKeyModal(false)}
+        provider={aiProvider}
+        onSelectProvider={handleSelectProvider}
+        geminiApiKey={apiKey}
+        onSaveGeminiApiKey={(newKey) => {
+          setApiKey(newKey);
+          localStorage.setItem('clarity_api_key', newKey);
+          setShowApiKeyModal(false);
+          setToast({ message: 'Gemini API Key saved successfully!' });
+          setTimeout(() => setToast(null), 3000);
+        }}
+        proxyConfigs={proxyConfigs}
+        activeProxyId={activeProxyId}
+        onSaveProxyConfig={handleSaveProxyConfig}
+        onDeleteProxyConfig={handleDeleteProxyConfig}
+        onSetActiveProxy={handleSetActiveProxy}
         tempApiKey={tempApiKey}
         setTempApiKey={setTempApiKey}
         saveApiKey={saveApiKey}
@@ -1107,6 +1435,7 @@ export default function App() {
         reportError={reportError}
         reportInsights={reportInsights}
         generateDetailedReport={handleGenerateReport}
+        onDownloadPdf={handlePrint}
       />
 
       <BulkAddModal
@@ -1114,6 +1443,7 @@ export default function App() {
         onClose={() => setIsBulkAddOpen(false)}
         onCommit={handleCommitBulkTransactions}
         apiKey={apiKey}
+        aiConfig={aiConfig}
         onOpenApiKeyModal={() => {
           setTempApiKey(apiKey);
           setShowApiKeyModal(true);
@@ -1126,6 +1456,21 @@ export default function App() {
         CurrencyIcon={CurrencyIcon}
       />
 
+      <ReceiptReviewModal
+        isOpen={Boolean(receiptReviewData)}
+        onClose={() => setReceiptReviewData(null)}
+        receiptData={receiptReviewData}
+        onCommit={(selectedItems) => {
+          handleCommitBulkTransactions(selectedItems);
+          setReceiptReviewData(null);
+        }}
+        expenseCategories={EXPENSE_CATEGORIES}
+        paymentMethods={PAYMENT_METHODS}
+        formatMoney={formatMoney}
+        existingTransactions={transactions}
+        availableBalance={getAvailableBalance()}
+      />
+
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[80] bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-4 text-sm font-semibold animate-fade-in-up border border-slate-700">
           <span>{toast.message}</span>
@@ -1136,6 +1481,7 @@ export default function App() {
           )}
         </div>
       )}
+      </div>
 
     </div>
   );
