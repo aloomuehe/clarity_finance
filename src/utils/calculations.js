@@ -58,6 +58,20 @@ export const getMonthData = (monthlyData, selectedMonth) => {
   return { currentMonthData: current, previousMonthData: previous, highestSavingsMonth: bestMonth ? { month: bestMonth, savings: maxSavings } : null };
 };
 
+export const getAvailableBalance = (transactions, excludeIds = null) => {
+  const excludeSet = excludeIds
+    ? (excludeIds instanceof Set ? excludeIds : new Set(Array.isArray(excludeIds) ? excludeIds : [excludeIds]))
+    : null;
+
+  return (transactions || []).reduce((acc, t) => {
+    if (!t || (excludeSet && excludeSet.has(t.id))) return acc;
+    const amt = Math.abs(Number(t.amount) || 0);
+    if (t.type === 'income') return acc + amt;
+    if (t.type === 'expense') return acc - amt;
+    return acc;
+  }, 0);
+};
+
 export const calculateBalance = (transactions) => (transactions || []).reduce((acc, curr) => {
   if (!curr) return acc;
   const amount = Math.abs(Number(curr.amount) || 0);

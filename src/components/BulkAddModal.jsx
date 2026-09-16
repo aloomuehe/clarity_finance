@@ -824,6 +824,9 @@ function BulkAddModalContent({
                       Ready to import
                     </span>
                   )}
+                  <span className="text-[10px] text-slate-400 block mt-0.5">
+                    Available cash: {formatMoney(validation.startingBalance)}
+                  </span>
                 </div>
               </div>
 

@@ -17,6 +17,7 @@ import { formatCompactCurrency, formatCurrency } from './utils/formatting';
 import {
   aggregateMonthlyData,
   calculateBalance,
+  getAvailableBalance as getAvailableBalanceUtil,
   calculateDaysRemainingInfo,
   calculateElapsedDays,
   calculateExpensesByCategory,
@@ -296,13 +297,7 @@ export default function App() {
   const { balance } = useMemo(() => calculateBalance(transactions), [transactions]);
 
   const getAvailableBalance = (excludeTransactionId = null) => {
-    return transactions.reduce((acc, t) => {
-      if (!t || t.id === excludeTransactionId) return acc;
-      const amt = Math.abs(Number(t.amount) || 0);
-      if (t.type === 'income') return acc + amt;
-      if (t.type === 'expense') return acc - amt;
-      return acc;
-    }, 0);
+    return getAvailableBalanceUtil(transactions, excludeTransactionId);
   };
 
   // Automatically process recurring expenses when due
@@ -692,9 +687,7 @@ export default function App() {
     const linkedTransactions = transactions.filter(transaction => linkedIds.has(transaction.id));
 
     // Guard: deleting a borrowed loan removes income; verify balance does not drop negative
-    const resultingBalance = transactions
-      .filter(transaction => !linkedIds.has(transaction.id))
-      .reduce((acc, t) => acc + (t.type === 'income' ? Math.abs(Number(t.amount) || 0) : -Math.abs(Number(t.amount) || 0)), 0);
+    const resultingBalance = getAvailableBalanceUtil(transactions, linkedIds);
     if (resultingBalance < 0) {
       setToast({ message: `Cannot delete loan: borrowed funds have already been spent (would leave balance at ${formatMoney(resultingBalance)}).` });
       setTimeout(() => setToast(null), 4000);

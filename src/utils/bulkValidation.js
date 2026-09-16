@@ -1,4 +1,4 @@
-import { calculateBalance } from './calculations.js';
+import { getAvailableBalance } from './calculations.js';
 import { MAX_MONEY_AMOUNT } from '../constants/finance.js';
 import { getTodayStr } from './dates.js';
 
@@ -134,10 +134,10 @@ export function detectDuplicates(candidateRows, existingTransactions = [], { isR
  * current available cash balance.
  */
 export function validateBulkBatch(candidateRows = [], currentTransactions = [], formatMoney = (n) => String(n)) {
-  const startingBalance = calculateBalance(currentTransactions).balance;
+  const startingBalance = getAvailableBalance(currentTransactions);
 
   const errorsByRowId = {};
-  const selectedRows = candidateRows.filter(r => r.selected);
+  const selectedRows = candidateRows.filter(r => r.selected !== false);
   const excludedCount = candidateRows.length - selectedRows.length;
   const duplicateCount = candidateRows.filter(r => r.isDuplicate).length;
 
@@ -145,7 +145,13 @@ export function validateBulkBatch(candidateRows = [], currentTransactions = [], 
   const sortedSelected = [...selectedRows].sort((a, b) => {
     const da = a.date || '9999-99-99';
     const db = b.date || '9999-99-99';
-    return da.localeCompare(db);
+    const cmp = da.localeCompare(db);
+    if (cmp !== 0) return cmp;
+    // On the same date, cash inflows (income) are processed before outflows (expenses)
+    // so valid same-day income funds same-day expenses.
+    if (a.type === 'income' && b.type !== 'income') return -1;
+    if (a.type !== 'income' && b.type === 'income') return 1;
+    return 0;
   });
 
   let runningBalance = startingBalance;
