@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { CheckCircle, Landmark } from 'lucide-react';
+import { CheckCircle, Landmark, Edit2, Trash2, X, Calendar } from 'lucide-react';
+import { getTodayStr } from '../utils/dates.js';
 
 export default function Loans({
   formatMoney,
@@ -7,6 +8,7 @@ export default function Loans({
   loanForm,
   paymentInputs,
   handleLoanSubmit,
+  handleEditLoan,
   setLoanForm,
   setPaymentInputs,
   recordLoanPayment,
@@ -14,6 +16,15 @@ export default function Loans({
 }) {
   const [loanFilter, setLoanFilter] = useState('lent'); // 'lent' | 'borrowed' | 'completed'
   const [completedFilter, setCompletedFilter] = useState('all'); // 'all' | 'lent' | 'borrowed'
+
+  // Edit Modal State
+  const [editingLoan, setEditingLoan] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    person: '',
+    amount: '',
+    date: '',
+    note: '',
+  });
 
   const isLoanCompleted = (l) => Number(l.amountPaid) >= Number(l.amount);
 
@@ -54,6 +65,30 @@ export default function Loans({
     return 'Add one on the left to start tracking who owes what.';
   };
 
+  const handleOpenEdit = (loan) => {
+    setEditingLoan(loan);
+    setEditFormData({
+      person: loan.person || '',
+      amount: loan.amount !== undefined ? String(loan.amount) : '',
+      date: loan.date || getTodayStr(),
+      note: loan.note || '',
+    });
+  };
+
+  const handleCloseEdit = () => {
+    setEditingLoan(null);
+    setEditFormData({ person: '', amount: '', date: '', note: '' });
+  };
+
+  const handleSaveEdit = (e) => {
+    e.preventDefault();
+    if (!editingLoan || !handleEditLoan) return;
+    const ok = handleEditLoan(editingLoan.id, editFormData);
+    if (ok) {
+      handleCloseEdit();
+    }
+  };
+
   return (
     <div className="animate-fade-in-up space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -69,8 +104,27 @@ export default function Loans({
                 <button type="button" onClick={() => setLoanForm(p => ({...p, type: 'borrowed'}))} className={`flex-1 py-1.5 text-sm font-bold rounded-lg ${loanForm.type === 'borrowed' ? 'bg-white dk-bg-slate-700 text-rose-600 dk-text-rose-400 shadow-sm' : 'text-slate-600 dk-text-slate-400'}`}>I Borrowed</button>
               </div>
               <div><input type="text" value={loanForm.person} onChange={e => setLoanForm(p => ({...p, person: e.target.value}))} placeholder="Person/Entity" required className="w-full px-3 py-2 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-600 rounded-xl text-sm text-slate-900 dk-text-white font-medium outline-none focus:ring-2 focus:ring-indigo-500" /></div>
-              <div><input type="number" value={loanForm.amount} onChange={e => setLoanForm(p => ({...p, amount: e.target.value}))} placeholder="Amount" required className="w-full px-3 py-2 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-600 rounded-xl text-sm text-slate-900 dk-text-white font-bold outline-none focus:ring-2 focus:ring-indigo-500" /></div>
-              <button type="submit" className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow">Log Loan</button>
+              <div><input type="number" step="any" min="0.01" value={loanForm.amount} onChange={e => setLoanForm(p => ({...p, amount: e.target.value}))} placeholder="Amount" required className="w-full px-3 py-2 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-600 rounded-xl text-sm text-slate-900 dk-text-white font-bold outline-none focus:ring-2 focus:ring-indigo-500" /></div>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 dk-text-slate-400 mb-1">Date</label>
+                <input
+                  type="date"
+                  value={loanForm.date || getTodayStr()}
+                  onChange={e => setLoanForm(p => ({...p, date: e.target.value}))}
+                  required
+                  className="w-full px-3 py-2 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-600 rounded-xl text-sm text-slate-900 dk-text-white font-medium outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <input
+                  type="text"
+                  value={loanForm.note || ''}
+                  onChange={e => setLoanForm(p => ({...p, note: e.target.value}))}
+                  placeholder="Note (optional)"
+                  className="w-full px-3 py-2 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-600 rounded-xl text-sm text-slate-900 dk-text-white font-medium outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <button type="submit" className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow transition-colors cursor-pointer">Log Loan</button>
             </form>
           </div>
         </div>
@@ -164,25 +218,82 @@ export default function Loans({
             const isSettled = loan.amountPaid >= loan.amount;
             return (
               <div key={loan.id} className="dark-card bg-white dk-bg-slate-800 rounded-2xl p-5 border border-slate-200 dk-border-slate-700 shadow-sm relative overflow-hidden group">
-                {isSettled && <div className="absolute top-0 right-0 p-4"><CheckCircle className="w-6 h-6 text-emerald-500 opacity-50"/></div>}
+                {isSettled && (
+                  <div className="absolute top-0 right-0 p-4">
+                    <CheckCircle className="w-6 h-6 text-emerald-500 opacity-50" />
+                  </div>
+                )}
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${loan.type === 'lent' ? 'bg-emerald-100 text-emerald-800 dk-bg-emerald-900-30 dk-text-emerald-300' : 'bg-rose-100 text-rose-800 dk-bg-rose-900-20 dk-text-rose-300'}`}>{loan.type === 'lent' ? 'LENT TO' : 'BORROWED FROM'}</span>
+                    <span
+                      className={`px-2 py-0.5 rounded text-xs font-bold ${
+                        loan.type === 'lent'
+                          ? 'bg-emerald-100 text-emerald-800 dk-bg-emerald-900-30 dk-text-emerald-300'
+                          : 'bg-rose-100 text-rose-800 dk-bg-rose-900-20 dk-text-rose-300'
+                      }`}
+                    >
+                      {loan.type === 'lent' ? 'LENT TO' : 'BORROWED FROM'}
+                    </span>
                     <span className="font-bold ml-2 text-slate-900 dk-text-white">{loan.person}</span>
-                    <p className="text-xs text-slate-500 dk-text-slate-400 mt-1 font-medium">{loan.note} • {loan.date}</p>
+                    <p className="text-xs text-slate-500 dk-text-slate-400 mt-1 font-medium">
+                      {loan.note ? `${loan.note} • ` : ''}{loan.date || 'No date'}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="text-xl font-black text-slate-900 dk-text-white">{formatMoney(loan.amount)}</p>
-                    <button onClick={() => deleteLoanWithUndo(loan)} className="text-xs text-slate-400 hover:text-rose-500 dk-hover-text-rose-300 opacity-0 group-hover:opacity-100 mt-1 transition-opacity">Delete</button>
+                    <div className="flex items-center justify-end gap-2 mt-1 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEdit(loan)}
+                        className="text-xs text-slate-400 hover:text-indigo-600 dk-hover-text-indigo-400 font-medium cursor-pointer inline-flex items-center gap-1"
+                        title="Edit loan"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                        <span>Edit</span>
+                      </button>
+                      <span className="text-slate-300 dk-text-slate-600 text-xs">•</span>
+                      <button
+                        type="button"
+                        onClick={() => deleteLoanWithUndo(loan)}
+                        className="text-xs text-slate-400 hover:text-rose-500 dk-hover-text-rose-300 font-medium cursor-pointer inline-flex items-center gap-1"
+                        title="Delete loan"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Delete</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div className="bg-slate-50 dk-bg-slate-900 p-4 rounded-xl border border-slate-200 dk-border-slate-700 shadow-inner">
-                  <div className="flex justify-between text-sm mb-2 font-semibold text-slate-800 dk-text-slate-200"><span>Paid Back</span><span className="font-bold text-slate-900 dk-text-slate-100">{formatMoney(loan.amountPaid)} / {formatMoney(loan.amount)}</span></div>
-                  <div className="h-2.5 w-full bg-slate-200 dk-bg-slate-800 rounded-full overflow-hidden mb-4 border border-slate-200/50 dk-border-slate-700/50"><div className="h-full bg-indigo-500 dk-bg-indigo-400 rounded-full" style={{ width: `${Math.min((loan.amountPaid/loan.amount)*100, 100)}%` }}></div></div>
+                  <div className="flex justify-between text-sm mb-2 font-semibold text-slate-800 dk-text-slate-200">
+                    <span>Paid Back</span>
+                    <span className="font-bold text-slate-900 dk-text-slate-100">
+                      {formatMoney(loan.amountPaid)} / {formatMoney(loan.amount)}
+                    </span>
+                  </div>
+                  <div className="h-2.5 w-full bg-slate-200 dk-bg-slate-800 rounded-full overflow-hidden mb-4 border border-slate-200/50 dk-border-slate-700/50">
+                    <div
+                      className="h-full bg-indigo-500 dk-bg-indigo-400 rounded-full"
+                      style={{ width: `${Math.min((Number(loan.amountPaid) / (Number(loan.amount) || 1)) * 100, 100)}%` }}
+                    ></div>
+                  </div>
                   {!isSettled && (
                     <div className="flex gap-2">
-                      <input type="number" value={paymentInputs[loan.id] || ''} onChange={e => setPaymentInputs({...paymentInputs, [loan.id]: e.target.value})} placeholder="Log partial payment" className="flex-1 px-3 py-2 bg-white dk-bg-slate-800 border border-slate-300 dk-border-slate-600 rounded-lg text-sm text-slate-900 dk-text-white font-bold outline-none focus:ring-2 focus:ring-indigo-500" />
-                      <button onClick={() => recordLoanPayment(loan.id)} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold shadow-sm transition-colors">Record</button>
+                      <input
+                        type="number"
+                        step="any"
+                        value={paymentInputs[loan.id] || ''}
+                        onChange={e => setPaymentInputs({ ...paymentInputs, [loan.id]: e.target.value })}
+                        placeholder="Log partial payment"
+                        className="flex-1 px-3 py-2 bg-white dk-bg-slate-800 border border-slate-300 dk-border-slate-600 rounded-lg text-sm text-slate-900 dk-text-white font-bold outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => recordLoanPayment(loan.id)}
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold shadow-sm transition-colors cursor-pointer"
+                      >
+                        Record
+                      </button>
                     </div>
                   )}
                 </div>
@@ -191,6 +302,121 @@ export default function Loans({
           })}
         </div>
       </div>
+
+      {/* Edit Loan Modal */}
+      {editingLoan && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[80] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="dark-card bg-white dk-bg-slate-900 rounded-3xl w-full max-w-md p-6 relative shadow-2xl animate-fade-in-up border border-slate-200 dk-border-slate-800">
+            <div className="flex items-center justify-between gap-3 mb-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-indigo-100 dk-bg-indigo-900-30 rounded-2xl text-indigo-600 dk-text-indigo-400">
+                  <Edit2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900 dk-text-white">Edit Loan</h2>
+                  <p className="text-xs text-slate-500 dk-text-slate-400 font-medium">
+                    Update loan details and linked transaction
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleCloseEdit}
+                className="p-2 bg-slate-100 dk-bg-slate-800 rounded-full hover:bg-slate-200 dk-hover-bg-slate-700 text-slate-700 dk-text-slate-200 transition-colors cursor-pointer"
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              {/* Classification indicator (read-only, preserves lent/borrowed) */}
+              <div className="p-3 bg-slate-50 dk-bg-slate-800 rounded-2xl border border-slate-200 dk-border-slate-700 flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-600 dk-text-slate-300">Classification</span>
+                <span
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+                    editingLoan.type === 'lent'
+                      ? 'bg-emerald-100 text-emerald-800 dk-bg-emerald-900-30 dk-text-emerald-300'
+                      : 'bg-rose-100 text-rose-800 dk-bg-rose-900-20 dk-text-rose-300'
+                  }`}
+                >
+                  {editingLoan.type === 'lent' ? 'Lent (You are owed)' : 'Borrowed (You owe)'}
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 dk-text-slate-400 mb-1">Person / Entity</label>
+                <input
+                  type="text"
+                  value={editFormData.person}
+                  onChange={e => setEditFormData(p => ({ ...p, person: e.target.value }))}
+                  required
+                  placeholder="Person or entity name"
+                  className="w-full px-3 py-2 bg-slate-50 dk-bg-slate-800 border border-slate-300 dk-border-slate-700 rounded-xl text-sm text-slate-900 dk-text-white font-medium outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 dk-text-slate-400 mb-1">Original Loan Amount</label>
+                <input
+                  type="number"
+                  step="any"
+                  min={Number(editingLoan.amountPaid) > 0 ? Number(editingLoan.amountPaid) : 0.01}
+                  value={editFormData.amount}
+                  onChange={e => setEditFormData(p => ({ ...p, amount: e.target.value }))}
+                  required
+                  className="w-full px-3 py-2 bg-slate-50 dk-bg-slate-800 border border-slate-300 dk-border-slate-700 rounded-xl text-sm text-slate-900 dk-text-white font-bold outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                {Number(editingLoan.amountPaid) > 0 && (
+                  <p className="text-[11px] text-amber-600 dk-text-amber-400 mt-1 font-medium">
+                    Repaid so far: {formatMoney(editingLoan.amountPaid)}. Amount cannot be less than {formatMoney(editingLoan.amountPaid)}.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 dk-text-slate-400 mb-1 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-indigo-500" /> Loan Date
+                </label>
+                <input
+                  type="date"
+                  value={editFormData.date}
+                  onChange={e => setEditFormData(p => ({ ...p, date: e.target.value }))}
+                  required
+                  className="w-full px-3 py-2 bg-slate-50 dk-bg-slate-800 border border-slate-300 dk-border-slate-700 rounded-xl text-sm text-slate-900 dk-text-white font-medium outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 dk-text-slate-400 mb-1">Note (optional)</label>
+                <input
+                  type="text"
+                  value={editFormData.note}
+                  onChange={e => setEditFormData(p => ({ ...p, note: e.target.value }))}
+                  placeholder="e.g. Dinner, Rent share..."
+                  className="w-full px-3 py-2 bg-slate-50 dk-bg-slate-800 border border-slate-300 dk-border-slate-700 rounded-xl text-sm text-slate-900 dk-text-white font-medium outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleCloseEdit}
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dk-bg-slate-800 dk-hover-bg-slate-700 text-slate-700 dk-text-slate-200 font-bold rounded-xl transition-colors text-sm cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow transition-colors text-sm cursor-pointer"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

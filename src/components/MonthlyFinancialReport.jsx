@@ -59,7 +59,7 @@ export default function MonthlyFinancialReport({
     const isIncome = t.type === 'income';
     const list = isIncome ? incomeSources : expenseCategories;
     const match = list.find((c) => c.id === t.category);
-    return match ? `${match.icon || ''} ${match.label}`.trim() : (t.category || 'Other');
+    return match ? match.label : (t.category || 'Other');
   };
 
   const getPaymentLabel = (pmId) => {
@@ -237,7 +237,7 @@ export default function MonthlyFinancialReport({
                   return (
                     <tr key={cat.id} className="py-0.5">
                       <td className="py-1 pr-2 font-semibold text-slate-800 whitespace-nowrap">
-                        {cat.icon} {cat.label}
+                        {cat.label}
                       </td>
                       <td className="py-1 px-2 text-right font-bold text-slate-900 whitespace-nowrap">
                         {formatMoney(cat.amount)}

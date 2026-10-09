@@ -411,7 +411,7 @@ export const calculateWarnings = (currentMonthData, monthlyTarget, categoryTarge
     const formattedAvail = new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(Math.max(0, err.available));
     alerts.push({
       type: 'warning',
-      icon: '⚠️',
+      icon: 'warning',
       text: `Recurring expense "${err.name}" (${formattedReq}) could not be recorded due to insufficient balance (${formattedAvail} available).`,
     });
   });
@@ -425,13 +425,13 @@ export const calculateWarnings = (currentMonthData, monthlyTarget, categoryTarge
       if (savings < 0) {
         alerts.push({
           type: 'danger',
-          icon: '🚨',
+          icon: 'danger',
           text: `You have negative savings and are ${formattedDiff} behind your monthly savings target of ${formattedTarget}!`,
         });
       } else {
         alerts.push({
           type: 'warning',
-          icon: '⚠️',
+          icon: 'warning',
           text: `You are ${formattedDiff} behind your monthly savings target of ${formattedTarget}.`,
         });
       }
@@ -444,13 +444,13 @@ export const calculateWarnings = (currentMonthData, monthlyTarget, categoryTarge
     if (spent > limit) {
       alerts.push({
         type: 'danger',
-        icon: '🚨',
+        icon: 'danger',
         text: `You've overspent on ${catLabel} by ${new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(spent - limit)}.`,
       });
     } else if (limit > 0 && (spent / limit) >= 0.8) {
       alerts.push({
         type: 'warning',
-        icon: '⚠️',
+        icon: 'warning',
         text: `${catLabel} budget is ${((spent / limit) * 100).toFixed(0)}% used.`,
       });
     }

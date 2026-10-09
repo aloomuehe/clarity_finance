@@ -9,9 +9,18 @@ import {
   Upload,
   DownloadCloud,
   RefreshCw,
+  LayoutDashboard,
+  ArrowRightLeft,
+  TrendingUp,
+  TrendingDown,
+  Landmark,
+  Target,
+  Search,
+  AlertTriangle,
+  AlertCircle,
 } from 'lucide-react';
 import './App.css';
-import { getTodayStr, getMonthString, monthLabel } from './utils/dates';
+import { getTodayStr, getMonthString, monthLabel, sanitizeDate } from './utils/dates';
 import { loadLS, saveLS } from './utils/storage';
 import { formatCompactCurrency, formatCurrency } from './utils/formatting';
 import {
@@ -46,6 +55,7 @@ import { processMagicAdd } from './services/magicAdd';
 import { generateMonthlyReport } from './services/reports';
 
 import Dashboard from './components/Dashboard';
+import TransactionsPage from './components/TransactionsPage';
 import Forecast from './components/Forecast';
 import Loans from './components/Loans';
 import Goals from './components/Goals';
@@ -641,6 +651,11 @@ export default function App() {
       setToast({ message: `Enter a person and a finite amount up to ${formatMoney(MAX_MONEY_AMOUNT)}.` });
       return;
     }
+    const cleanDate = sanitizeDate(loanForm.date, '') || (/^\d{4}-\d{2}-\d{2}$/.test(loanForm.date) ? loanForm.date : getTodayStr());
+    if (!cleanDate) {
+      setToast({ message: 'Enter a valid date (YYYY-MM-DD).' });
+      return;
+    }
     const loanId = nextId('loan');
     const transactionId = nextId('loan-cash');
     const isLent = loanForm.type === 'lent';
@@ -651,23 +666,29 @@ export default function App() {
         return;
       }
     }
+    const cleanNote = typeof loanForm.note === 'string' ? loanForm.note.trim() : '';
+    const personTrimmed = loanForm.person.trim();
     const cashTransaction = {
       id: transactionId,
       type: isLent ? 'expense' : 'income',
       amount,
       category: isLent ? 'other_expense' : 'other_income',
       paymentMethod: 'bank',
-      date: loanForm.date,
-      note: `${isLent ? 'Loan to' : 'Loan from'} ${loanForm.person.trim()}`,
+      date: cleanDate,
+      note: cleanNote
+        ? `${isLent ? 'Loan to' : 'Loan from'} ${personTrimmed} (${cleanNote})`
+        : `${isLent ? 'Loan to' : 'Loan from'} ${personTrimmed}`,
       linkedLoanId: loanId,
       loanMovement: 'principal',
     };
     const loan = {
       id: loanId,
-      ...loanForm,
-      person: loanForm.person.trim(),
+      type: loanForm.type,
+      person: personTrimmed,
       amount,
       amountPaid: 0,
+      date: cleanDate,
+      note: cleanNote,
       principalTransactionId: transactionId,
       cashTransactionIds: [transactionId],
       repaymentTransactionIds: [],
@@ -675,15 +696,138 @@ export default function App() {
     setTransactions(prev => [cashTransaction, ...prev]);
     setLoans(prev => [loan, ...prev]);
     setLoanForm({ type: 'lent', person: '', amount: '', date: getTodayStr(), note: '' });
-    setSelectedMonth(getMonthString(loanForm.date));
+    setSelectedMonth(getMonthString(cleanDate));
     setToast({ message: `${isLent ? 'Loan recorded as an expense' : 'Borrowed money recorded as income'}.` });
     setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleEditLoan = (loanId, updatedLoanData) => {
+    const loan = loans.find(l => l.id === loanId);
+    if (!loan) {
+      setToast({ message: 'Loan not found.' });
+      setTimeout(() => setToast(null), 3000);
+      return false;
+    }
+
+    const trimmedPerson = typeof updatedLoanData?.person === 'string' ? updatedLoanData.person.trim() : '';
+    if (!trimmedPerson) {
+      setToast({ message: 'Please enter a person or entity name.' });
+      setTimeout(() => setToast(null), 3000);
+      return false;
+    }
+
+    const newAmount = Number(updatedLoanData?.amount);
+    if (!Number.isFinite(newAmount) || newAmount <= 0 || newAmount > MAX_MONEY_AMOUNT) {
+      setToast({ message: `Enter a positive amount up to ${formatMoney(MAX_MONEY_AMOUNT)}.` });
+      setTimeout(() => setToast(null), 3000);
+      return false;
+    }
+
+    const cleanDate = sanitizeDate(updatedLoanData?.date, '') || (/^\d{4}-\d{2}-\d{2}$/.test(updatedLoanData?.date) ? updatedLoanData.date : '');
+    if (!cleanDate) {
+      setToast({ message: 'Please enter a valid loan date (YYYY-MM-DD).' });
+      setTimeout(() => setToast(null), 3000);
+      return false;
+    }
+
+    const cleanNote = typeof updatedLoanData?.note === 'string' ? updatedLoanData.note.trim() : '';
+    const currentPaid = Math.max(0, Number(loan.amountPaid) || 0);
+
+    // Rule: Cannot edit loan amount to be less than the amount already repaid
+    if (newAmount < currentPaid) {
+      setToast({ message: `Loan amount cannot be less than the amount already repaid (${formatMoney(currentPaid)}).` });
+      setTimeout(() => setToast(null), 4000);
+      return false;
+    }
+
+    // Locate linked principal transaction
+    let principalTx = null;
+    if (loan.principalTransactionId) {
+      principalTx = transactions.find(t => t.id === loan.principalTransactionId);
+    }
+    if (!principalTx) {
+      principalTx = transactions.find(t => t.linkedLoanId === loan.id && t.loanMovement === 'principal');
+    }
+    if (!principalTx) {
+      principalTx = transactions.find(t => t.linkedLoanId === loan.id && t.type === (loan.type === 'lent' ? 'expense' : 'income'));
+    }
+
+    // Available balance validation if principal transaction exists
+    if (principalTx) {
+      const isLent = loan.type === 'lent';
+      const availableWithout = getAvailableBalanceUtil(transactions, principalTx.id);
+
+      if (isLent) {
+        if (newAmount > availableWithout) {
+          setToast({ message: `Insufficient balance. You only have ${formatMoney(availableWithout)} available for this loan.` });
+          setTimeout(() => setToast(null), 4000);
+          return false;
+        }
+      } else {
+        const resultingBalance = availableWithout + newAmount;
+        if (resultingBalance < 0) {
+          setToast({ message: `Cannot reduce borrowed amount: funds have already been spent (would leave balance at ${formatMoney(resultingBalance)}). Minimum required: ${formatMoney(Math.abs(availableWithout))}.` });
+          setTimeout(() => setToast(null), 4000);
+          return false;
+        }
+      }
+    }
+
+    const isLent = loan.type === 'lent';
+    const oldPerson = loan.person;
+
+    // Update transactions:
+    // 1. Update principal transaction amount, date, and note in place
+    // 2. Update repayment transaction notes with new person name (preserve repayment dates and amounts)
+    setTransactions(prev => prev.map(t => {
+      if (principalTx && t.id === principalTx.id) {
+        return {
+          ...t,
+          amount: newAmount,
+          date: cleanDate,
+          note: cleanNote
+            ? `${isLent ? 'Loan to' : 'Loan from'} ${trimmedPerson} (${cleanNote})`
+            : `${isLent ? 'Loan to' : 'Loan from'} ${trimmedPerson}`,
+        };
+      }
+      if (t.linkedLoanId === loan.id && t.loanMovement === 'repayment') {
+        const repPrefix = isLent ? 'Repayment from' : 'Repayment to';
+        return {
+          ...t,
+          note: t.note && oldPerson && t.note.includes(oldPerson)
+            ? t.note.replaceAll(oldPerson, trimmedPerson)
+            : (t.note || `${repPrefix} ${trimmedPerson}`),
+        };
+      }
+      return t;
+    }));
+
+    // Update loan record
+    const updatedLoan = {
+      ...loan,
+      person: trimmedPerson,
+      amount: newAmount,
+      date: cleanDate,
+      note: cleanNote,
+      principalTransactionId: principalTx ? principalTx.id : (loan.principalTransactionId || null),
+      cashTransactionIds: loan.cashTransactionIds || (principalTx ? [principalTx.id] : []),
+      repaymentTransactionIds: loan.repaymentTransactionIds || [],
+    };
+
+    setLoans(prev => prev.map(l => l.id === loan.id ? updatedLoan : l));
+    setSelectedMonth(getMonthString(cleanDate));
+    setToast({ message: 'Loan updated successfully.' });
+    setTimeout(() => setToast(null), 3000);
+    return true;
   };
 
   const deleteLoanWithUndo = (loan) => {
     const linkedIds = new Set(loan.cashTransactionIds || []);
     if (loan.principalTransactionId) linkedIds.add(loan.principalTransactionId);
     (loan.repaymentTransactionIds || []).forEach(id => linkedIds.add(id));
+    transactions.forEach(t => {
+      if (t.linkedLoanId === loan.id) linkedIds.add(t.id);
+    });
     const linkedTransactions = transactions.filter(transaction => linkedIds.has(transaction.id));
 
     // Guard: deleting a borrowed loan removes income; verify balance does not drop negative
@@ -1212,113 +1356,257 @@ export default function App() {
         paymentMethods={PAYMENT_METHODS}
       />
 
-      <div className="web-app-view">
+      <div className="web-app-view flex min-h-screen">
         {transactionAnimation && (
-          <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50 flex items-center gap-3 text-5xl font-black drop-shadow-2xl no-print ${transactionAnimation.type === 'income' ? 'anim-income text-emerald-500' : 'anim-expense text-rose-500'}`}>
-            {transactionAnimation.type === 'income' ? '🤑' : '💸'} {transactionAnimation.type === 'income' ? '+' : '-'}{formatMoney(transactionAnimation.amount)}
+          <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50 flex items-center gap-2.5 text-4xl font-bold drop-shadow-2xl no-print ${transactionAnimation.type === 'income' ? 'anim-income text-emerald-500' : 'anim-expense text-rose-500'}`}>
+            {transactionAnimation.type === 'income' ? <TrendingUp className="w-8 h-8 shrink-0" /> : <TrendingDown className="w-8 h-8 shrink-0" />}
+            <span>{transactionAnimation.type === 'income' ? '+' : '-'}{formatMoney(transactionAnimation.amount)}</span>
           </div>
         )}
 
-        <nav className="bg-white/90 dk-bg-slate-900-80 border-b border-slate-200 dk-border-slate-800 sticky top-0 z-40 shadow-sm backdrop-blur-md transition-colors duration-300 no-print">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-indigo-600 dk-text-indigo-400">
-              <Activity className="w-6 h-6 shrink-0" />
-              <h1 className="text-xl font-bold tracking-tight text-slate-900 dk-text-white hidden lg:block">Clarity Finance</h1>
+        {/* Left Sidebar (Desktop) matching reference */}
+        <aside className="hidden md:flex flex-col w-60 shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200/90 dark:border-slate-800 p-4 justify-between h-screen sticky top-0 z-40 no-print">
+          <div>
+            {/* Brand Logo & Name */}
+            <div className="flex items-center gap-2.5 px-2 py-1 mb-4 text-blue-600 dark:text-blue-400">
+              <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black shadow-xs">
+                <Activity className="w-4 h-4" />
+              </div>
+              <h1 className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
+                Clarity Finance
+              </h1>
+            </div>
 
-              <div className="flex bg-slate-100 dk-bg-slate-800 p-1 rounded-xl ml-2 lg:ml-6 overflow-x-auto max-w-full">
-                <button onClick={() => setActiveTab('dashboard')} className={`px-3 sm:px-4 py-1.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${activeTab === 'dashboard' ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-400 shadow-sm' : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-slate-200'}`}>Dashboard</button>
-                <button onClick={() => setActiveTab('forecast')} className={`px-3 sm:px-4 py-1.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${activeTab === 'forecast' ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-400 shadow-sm' : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-slate-200'}`}>Forecast</button>
-                <button onClick={() => setActiveTab('loans')} className={`px-3 sm:px-4 py-1.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${activeTab === 'loans' ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-400 shadow-sm' : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-slate-200'}`}>Loans</button>
-                <button onClick={() => setActiveTab('goals')} className={`px-3 sm:px-4 py-1.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${activeTab === 'goals' ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-400 shadow-sm' : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-slate-200'}`}>Goals</button>
+            {/* Search Input (Decorative / Functional Filter) */}
+            <div className="relative mb-5">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-8 pr-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 border border-transparent focus:border-slate-300 dark:focus:border-slate-700 outline-none transition-colors"
+              />
+            </div>
+
+            {/* Primary Navigation */}
+            <nav className="space-y-1">
+              {[
+                { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+                { id: 'transactions', label: 'Transactions', icon: ArrowRightLeft },
+                { id: 'forecast', label: 'Forecast', icon: TrendingUp },
+                { id: 'loans', label: 'Loans', icon: Landmark },
+                { id: 'goals', label: 'Goals', icon: Target },
+              ].map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                      isActive
+                        ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400 font-bold shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* Bottom Utilities Group */}
+          <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-1 text-xs">
+            <button
+              onClick={() => { setTempApiKey(apiKey); setShowApiKeyModal(true); }}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors font-medium text-left"
+              title="AI Settings"
+            >
+              <Key className="w-4 h-4 text-slate-400 shrink-0" />
+              <span>AI Settings</span>
+            </button>
+
+            <button
+              onClick={handleExport}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors font-medium text-left"
+              title="Backup Data"
+            >
+              <DownloadCloud className="w-4 h-4 text-slate-400 shrink-0" />
+              <span>Export Data</span>
+            </button>
+
+            <label
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors font-medium cursor-pointer text-left"
+              title="Restore Data"
+            >
+              <Upload className="w-4 h-4 text-slate-400 shrink-0" />
+              <span>Import Data</span>
+              <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+            </label>
+
+            <button
+              onClick={handlePrint}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors font-medium text-left"
+              title="Download Monthly PDF"
+            >
+              <Download className="w-4 h-4 text-slate-400 shrink-0" />
+              <span>Download PDF</span>
+            </button>
+
+            <button
+              onClick={toggleDarkMode}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors font-medium text-left"
+              title="Toggle Theme"
+            >
+              {isDarkMode ? <Sun className="w-4 h-4 text-amber-400 shrink-0" /> : <Moon className="w-4 h-4 text-slate-400 shrink-0" />}
+              <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+            </button>
+
+            {/* User Profile Footer */}
+            <div className="pt-3 mt-2 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2.5 px-1">
+              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs shrink-0">
+                CF
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-slate-900 dark:text-white truncate">Personal Ledger</p>
+                <p className="text-[10px] text-slate-400 truncate">Clarity Finance</p>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* Main Content Column */}
+        <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+          {/* Top Header matching reference */}
+          <header className="h-16 px-4 sm:px-6 lg:px-8 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-800 flex items-center justify-between sticky top-0 z-30 no-print">
+            <div className="flex items-center gap-3">
+              <div className="md:hidden flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                <Activity className="w-5 h-5 shrink-0" />
+                <span className="font-bold text-sm text-slate-900 dark:text-white">Clarity</span>
+              </div>
+              <div className="hidden md:flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+                <LayoutDashboard className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className="capitalize">{activeTab}</span>
+                <span>/</span>
+                <span className="text-slate-800 dark:text-slate-200 font-semibold">{monthLabel(selectedMonth)}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-4 text-sm font-medium text-slate-600 dk-text-slate-300">
+            <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium text-slate-600 dark:text-slate-300">
               <MonthPicker
                 selectedMonth={selectedMonth}
                 onSelectMonth={setSelectedMonth}
                 monthLabel={monthLabel}
               />
 
-              <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="bg-slate-100 hover:bg-slate-200 dk-bg-slate-800 dk-hover-bg-slate-700 border-none rounded-xl px-3 py-2 text-sm font-bold text-slate-800 dk-text-slate-200 transition-all duration-300 ease-in-out cursor-pointer outline-none hover:shadow-sm focus:ring-2 focus:ring-indigo-500/50">
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border-none rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 transition-colors cursor-pointer outline-none"
+              >
                 {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
               </select>
 
-              <button onClick={() => { setTempApiKey(apiKey); setShowApiKeyModal(true); }} className="p-2 rounded-full hover:bg-slate-100 dk-hover-bg-slate-800 transition-colors text-indigo-600 dk-text-indigo-400" title="API Key Settings"><Key className="w-5 h-5" /></button>
-              <button onClick={handleExport} className="p-2 rounded-full hover:bg-slate-100 dk-hover-bg-slate-800 transition-colors text-slate-700 dk-text-slate-300" title="Backup Data"><DownloadCloud className="w-5 h-5" /></button>
-              <label className="p-2 rounded-full hover:bg-slate-100 dk-hover-bg-slate-800 transition-colors cursor-pointer text-slate-700 dk-text-slate-300" title="Restore Data"><Upload className="w-5 h-5" /><input type="file" accept=".json" onChange={handleImport} className="hidden" /></label>
-              <button onClick={handlePrint} className="p-2 rounded-full hover:bg-slate-100 dk-hover-bg-slate-800 transition-colors text-slate-700 dk-text-slate-300" title="Download Monthly PDF"><Download className="w-5 h-5" /></button>
-              <button onClick={toggleDarkMode} className="p-2 rounded-full hover:bg-slate-100 dk-hover-bg-slate-800 transition-colors text-slate-700 dk-text-slate-300" title="Toggle Theme">{isDarkMode ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-indigo-600" />}</button>
+              <button
+                onClick={toggleDarkMode}
+                className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 md:hidden"
+                title="Toggle Theme"
+              >
+                {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
+              </button>
             </div>
-          </div>
-        </nav>
+          </header>
 
-        <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-
-        {warnings.length > 0 && activeTab === 'dashboard' && (
-          <div className="animate-fade-in-up space-y-2 no-print">
-            {warnings.map((warn, i) => (
-              <div key={i} className={`flex items-center gap-3 border-l-4 p-4 rounded-r-xl shadow-sm ${warn.type === 'danger' ? 'bg-rose-50 border-rose-500 text-rose-900 dk-bg-rose-900-20 dk-text-rose-300' : 'bg-amber-50 border-amber-500 text-amber-900 dk-bg-amber-900-20 dk-text-amber-300'}`}>
-                <span className="text-xl">{warn.icon}</span><p className="text-sm font-semibold">{warn.text}</p>
+          {/* Main Page Area */}
+          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-20 md:pb-8">
+            {warnings.length > 0 && activeTab === 'dashboard' && (
+              <div className="animate-fade-in-up space-y-2 no-print">
+                {warnings.map((warn, i) => (
+                  <div key={i} className={`flex items-center gap-3 border-l-4 p-3.5 rounded-r-xl shadow-2xs text-xs font-semibold ${warn.type === 'danger' ? 'bg-rose-50 border-rose-500 text-rose-900 dark:bg-rose-950/40 dark:text-rose-300' : 'bg-amber-50 border-amber-500 text-amber-900 dark:bg-amber-950/40 dark:text-amber-300'}`}>
+                    {warn.type === 'danger' ? (
+                      <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                    ) : (
+                      <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500" />
+                    )}
+                    <p>{warn.text}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+            )}
 
-        {activeTab === 'dashboard' && (
-          <Dashboard
-            currentMonthData={currentMonthData}
-            previousMonthData={previousMonthData}
-            balance={balance}
-            highestSavingsMonth={highestSavingsMonth}
-            monthlyTarget={monthlyTarget}
-            handleMonthlyTargetChange={handleMonthlyTargetChange}
-            showBudgetSettings={showBudgetSettings}
-            setShowBudgetSettings={setShowBudgetSettings}
-            categoryTargets={categoryTargets}
-            handleBudgetChange={handleBudgetChange}
-            financialHealth={financialHealth}
-            dailyAverage={dailyAverage}
-            formatMoney={formatMoney}
-            openHeatmap={openHeatmap}
-            setIsTrendOpen={setIsTrendOpen}
-            noSpendStreak={noSpendStreak}
-            daysRemainingInfo={daysRemainingInfo}
-            frequentCategory={frequentCategory}
-            magicPrompt={magicPrompt}
-            setMagicPrompt={setMagicPrompt}
-            handleMagicAdd={handleMagicAdd}
-            isMagicLoading={isMagicLoading}
-            fileInputRef={fileInputRef}
-            handleFileUpload={handleFileUpload}
-            isScanning={isScanning}
-            formData={formData}
-            handleInputChange={handleInputChange}
-            handleSubmit={handleSubmit}
-            editingId={editingId}
-            isSplit={isSplit}
-            setIsSplit={setIsSplit}
-            splitDetails={splitDetails}
-            setSplitDetails={setSplitDetails}
-            CurrencyIcon={CurrencyIcon}
-            expensesByCategory={expensesByCategory}
-            generateDetailedReport={handleGenerateReport}
-            monthLabel={monthLabel}
-            selectedMonth={selectedMonth}
-            onSelectMonth={setSelectedMonth}
-            displayTransactions={displayTransactions}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            filter={filter}
-            setFilter={setFilter}
-            initiateEdit={initiateEdit}
-            deleteTransaction={deleteTransaction}
-            expenseCategories={EXPENSE_CATEGORIES}
-            incomeSources={INCOME_SOURCES}
-            paymentMethods={PAYMENT_METHODS}
-            onBulkAdd={handleBulkAdd}
-          />
-        )}
+            {activeTab === 'dashboard' && (
+              <Dashboard
+                currentMonthData={currentMonthData}
+                previousMonthData={previousMonthData}
+                balance={balance}
+                highestSavingsMonth={highestSavingsMonth}
+                monthlyTarget={monthlyTarget}
+                handleMonthlyTargetChange={handleMonthlyTargetChange}
+                showBudgetSettings={showBudgetSettings}
+                setShowBudgetSettings={setShowBudgetSettings}
+                categoryTargets={categoryTargets}
+                handleBudgetChange={handleBudgetChange}
+                financialHealth={financialHealth}
+                dailyAverage={dailyAverage}
+                formatMoney={formatMoney}
+                openHeatmap={openHeatmap}
+                setIsTrendOpen={setIsTrendOpen}
+                noSpendStreak={noSpendStreak}
+                daysRemainingInfo={daysRemainingInfo}
+                frequentCategory={frequentCategory}
+                expensesByCategory={expensesByCategory}
+                generateDetailedReport={handleGenerateReport}
+                monthLabel={monthLabel}
+                selectedMonth={selectedMonth}
+                monthTransactions={monthTransactions}
+                onNavigateToTransactions={() => setActiveTab('transactions')}
+                initiateEdit={initiateEdit}
+                expenseCategories={EXPENSE_CATEGORIES}
+                incomeSources={INCOME_SOURCES}
+                sixMonthTrend={sixMonthTrend}
+                formatCompactMoney={formatCompactMoney}
+              />
+            )}
+
+            {activeTab === 'transactions' && (
+              <TransactionsPage
+                displayTransactions={displayTransactions}
+                currentMonthData={currentMonthData}
+                selectedMonth={selectedMonth}
+                onSelectMonth={setSelectedMonth}
+                monthLabel={monthLabel}
+                formatMoney={formatMoney}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                filter={filter}
+                setFilter={setFilter}
+                initiateEdit={initiateEdit}
+                editingId={editingId}
+                deleteTransaction={deleteTransaction}
+                formData={formData}
+                handleInputChange={handleInputChange}
+                handleSubmit={handleSubmit}
+                isSplit={isSplit}
+                setIsSplit={setIsSplit}
+                splitDetails={splitDetails}
+                setSplitDetails={setSplitDetails}
+                expenseCategories={EXPENSE_CATEGORIES}
+                incomeSources={INCOME_SOURCES}
+                paymentMethods={PAYMENT_METHODS}
+                CurrencyIcon={CurrencyIcon}
+                onBulkAdd={handleBulkAdd}
+                magicPrompt={magicPrompt}
+                setMagicPrompt={setMagicPrompt}
+                handleMagicAdd={handleMagicAdd}
+                isMagicLoading={isMagicLoading}
+                fileInputRef={fileInputRef}
+                handleFileUpload={handleFileUpload}
+                isScanning={isScanning}
+              />
+            )}
 
         {activeTab === 'forecast' && (
           <Forecast
@@ -1339,6 +1627,12 @@ export default function App() {
             deleteWithUndo={deleteWithUndo}
             setRecurring={setRecurring}
             setPlanned={setPlanned}
+            selectedMonth={selectedMonth}
+            monthLabel={monthLabel}
+            balance={balance}
+            currentMonthData={currentMonthData}
+            transactions={transactions}
+            expenseCategories={EXPENSE_CATEGORIES}
           />
         )}
 
@@ -1349,6 +1643,7 @@ export default function App() {
             loanForm={loanForm}
             paymentInputs={paymentInputs}
             handleLoanSubmit={handleLoanSubmit}
+            handleEditLoan={handleEditLoan}
             setLoanForm={setLoanForm}
             setPaymentInputs={setPaymentInputs}
             recordLoanPayment={recordLoanPayment}
@@ -1373,7 +1668,34 @@ export default function App() {
 
       </main>
 
-      <AiSettingsModal
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-3 py-1.5 flex items-center justify-around no-print">
+        {[
+          { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+          { id: 'transactions', label: 'Transactions', icon: ArrowRightLeft },
+          { id: 'forecast', label: 'Forecast', icon: TrendingUp },
+          { id: 'loans', label: 'Loans', icon: Landmark },
+          { id: 'goals', label: 'Goals', icon: Target },
+        ].map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-lg text-[10px] font-semibold transition-colors ${
+                isActive ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+    </div>
+
+    <AiSettingsModal
         open={showApiKeyModal}
         onClose={() => setShowApiKeyModal(false)}
         provider={aiProvider}

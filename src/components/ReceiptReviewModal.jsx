@@ -182,12 +182,12 @@ function ReceiptReviewModalContent({
                   <div className="font-semibold flex items-center justify-between">
                     <span>
                       {isExactTotalVerified
-                        ? '✓ Receipt total verified'
+                        ? 'Receipt total verified'
                         : isTaxVerified
-                          ? '✓ Total verified (items + tax match receipt total)'
+                          ? 'Total verified (items + tax match receipt total)'
                           : totalDifference > 0
-                            ? `⚠ Difference: ${formatMoney(totalDifference)}`
-                            : `⚠ Difference: ${formatMoney(Math.abs(totalDifference))}`}
+                            ? `Difference: ${formatMoney(totalDifference)}`
+                            : `Difference: ${formatMoney(Math.abs(totalDifference))}`}
                     </span>
                     <span className="text-xs font-mono font-bold">
                       Extracted item total: {formatMoney(extractedTotal)} / Receipt total: {formatMoney(receiptTotal)}
@@ -312,7 +312,7 @@ function ReceiptReviewModalContent({
                               ) : item.uncertainReason ? (
                                 <div className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1 font-medium">
                                   <AlertCircle className="w-3 h-3 shrink-0" />
-                                  <span>⚠ {item.uncertainReason}</span>
+                                  <span>{item.uncertainReason}</span>
                                 </div>
                               ) : null}
                             </div>

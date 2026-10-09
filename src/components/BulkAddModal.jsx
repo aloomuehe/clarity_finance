@@ -700,7 +700,7 @@ function BulkAddModalContent({
                             >
                               {cats.map(c => (
                                 <option key={c.id} value={c.id}>
-                                  {c.icon} {c.label}
+                                  {c.label}
                                 </option>
                               ))}
                             </select>
@@ -713,7 +713,7 @@ function BulkAddModalContent({
                             >
                               {paymentMethods.map(p => (
                                 <option key={p.id} value={p.id}>
-                                  {p.icon} {p.label}
+                                  {p.label}
                                 </option>
                               ))}
                             </select>
@@ -1017,7 +1017,7 @@ function BulkAddModalContent({
                             >
                               {cats.map(c => (
                                 <option key={c.id} value={c.id}>
-                                  {c.icon} {c.label}
+                                  {c.label}
                                 </option>
                               ))}
                             </select>
@@ -1030,7 +1030,7 @@ function BulkAddModalContent({
                             >
                               {paymentMethods.map(p => (
                                 <option key={p.id} value={p.id}>
-                                  {p.icon} {p.label}
+                                  {p.label}
                                 </option>
                               ))}
                             </select>

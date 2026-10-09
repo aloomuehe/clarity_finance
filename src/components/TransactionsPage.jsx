@@ -1,0 +1,257 @@
+import { useState } from 'react';
+import {
+  ArrowRightLeft,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Plus,
+  Edit2,
+  Sparkles,
+  Wand2,
+  Loader2,
+  Camera,
+  Layers,
+  ChevronUp,
+  ChevronDown,
+} from 'lucide-react';
+import TransactionForm from './TransactionForm';
+import Transactions from './Transactions';
+
+export default function TransactionsPage({
+  displayTransactions,
+  currentMonthData,
+  selectedMonth,
+  onSelectMonth,
+  monthLabel,
+  formatMoney,
+  searchQuery,
+  setSearchQuery,
+  filter,
+  setFilter,
+  initiateEdit,
+  editingId,
+  deleteTransaction,
+  formData,
+  handleInputChange,
+  handleSubmit,
+  isSplit,
+  setIsSplit,
+  splitDetails,
+  setSplitDetails,
+  expenseCategories,
+  incomeSources,
+  paymentMethods,
+  CurrencyIcon,
+  onBulkAdd,
+  magicPrompt,
+  setMagicPrompt,
+  handleMagicAdd,
+  isMagicLoading,
+  fileInputRef,
+  handleFileUpload,
+  isScanning,
+}) {
+  const [showManualForm, setShowManualForm] = useState(false);
+
+  return (
+    <div className="space-y-6 animate-fade-in-up">
+      {/* 1. Page Header with CashSync-inspired Layout */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+            <span>All Transactions</span>
+            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200/80 dark:border-slate-700">
+              {monthLabel(selectedMonth)}
+            </span>
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Complete statement history, search, filters, and transaction management
+          </p>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowManualForm(!showManualForm)}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-xl border transition-colors flex items-center gap-1.5 ${
+              showManualForm || editingId
+                ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/60'
+                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200/90 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+            }`}
+          >
+            {editingId ? <Edit2 className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+            <span>{editingId ? 'Edit Entry' : 'Manual Entry'}</span>
+            {showManualForm ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </button>
+
+          <button
+            type="button"
+            onClick={onBulkAdd}
+            className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 border border-transparent transition-colors flex items-center gap-1.5 shadow-2xs"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Bulk Add</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 2. Top 3 Summary Cards (CashSync Reference Style) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Card 1: Net Change This Month */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+            <ArrowRightLeft className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block uppercase tracking-wider">
+              Net Change This Month
+            </span>
+            <p className={`text-xl sm:text-2xl font-bold tracking-tight tabular-nums mt-0.5 ${
+              currentMonthData.savings >= 0
+                ? 'text-slate-900 dark:text-white'
+                : 'text-rose-600 dark:text-rose-400'
+            }`}>
+              {currentMonthData.savings >= 0 ? '+' : ''}{formatMoney(currentMonthData.savings)}
+            </p>
+          </div>
+        </div>
+
+        {/* Card 2: Money In */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <ArrowDownLeft className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block uppercase tracking-wider">
+              Money In (Income)
+            </span>
+            <p className="text-xl sm:text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5">
+              +{formatMoney(currentMonthData.income)}
+            </p>
+          </div>
+        </div>
+
+        {/* Card 3: Money Out */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+            <ArrowUpRight className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block uppercase tracking-wider">
+              Money Out (Expenses)
+            </span>
+            <p className="text-xl sm:text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400 tabular-nums mt-0.5">
+              -{formatMoney(currentMonthData.expense)}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Action Toolbar: Magic Quick Add & Receipt Scanner */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/90 dark:border-slate-800 shadow-xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          {/* Magic Add Input */}
+          <div className="flex-1 flex items-center gap-2">
+            <div className="relative flex-1">
+              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-blue-600 dark:text-blue-400 pointer-events-none">
+                <Sparkles className="w-3.5 h-3.5" />
+              </span>
+              <input
+                type="text"
+                value={magicPrompt}
+                onChange={(e) => setMagicPrompt(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleMagicAdd()}
+                placeholder="Magic Quick Add: '240 snacks' or '5000 freelance'..."
+                className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleMagicAdd}
+              disabled={isMagicLoading}
+              className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-2xs disabled:opacity-50 transition-colors flex items-center gap-1.5 shrink-0"
+              title="Add via AI or offline natural-language parsing"
+            >
+              {isMagicLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+              <span className="hidden sm:inline">Add</span>
+            </button>
+            <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isScanning}
+              className="px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold shadow-2xs disabled:opacity-50 transition-colors flex items-center gap-1.5 shrink-0"
+              title="Scan Receipt Photo"
+            >
+              {isScanning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />}
+              <span className="hidden sm:inline">Scan Receipt</span>
+            </button>
+          </div>
+
+          {/* Manual Entry Button */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowManualForm(!showManualForm)}
+              className={`px-3 py-2 text-xs font-semibold rounded-xl border transition-colors flex items-center gap-1.5 ${
+                showManualForm || editingId
+                  ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/60'
+                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
+              }`}
+            >
+              {editingId ? <Edit2 className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+              <span>{editingId ? 'Edit Transaction' : 'Manual Form'}</span>
+              {showManualForm ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Collapsible Manual Transaction Form */}
+        {(showManualForm || editingId) && (
+          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <TransactionForm
+              formData={formData}
+              handleInputChange={handleInputChange}
+              handleSubmit={(e) => {
+                handleSubmit(e);
+                if (!editingId) setShowManualForm(false);
+              }}
+              editingId={editingId}
+              isSplit={isSplit}
+              setIsSplit={setIsSplit}
+              splitDetails={splitDetails}
+              setSplitDetails={setSplitDetails}
+              expenseCategories={expenseCategories}
+              incomeSources={incomeSources}
+              paymentMethods={paymentMethods}
+              CurrencyIcon={CurrencyIcon}
+              onBulkAdd={onBulkAdd}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* 4. Full Ledger Transactions Table */}
+      <Transactions
+        formatMoney={formatMoney}
+        monthLabel={monthLabel}
+        selectedMonth={selectedMonth}
+        onSelectMonth={onSelectMonth}
+        displayTransactions={displayTransactions}
+        currentMonthData={currentMonthData}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        filter={filter}
+        setFilter={setFilter}
+        initiateEdit={(tx) => {
+          initiateEdit(tx);
+          setShowManualForm(true);
+        }}
+        deleteTransaction={deleteTransaction}
+        expenseCategories={expenseCategories}
+        incomeSources={incomeSources}
+        paymentMethods={paymentMethods}
+      />
+    </div>
+  );
+}

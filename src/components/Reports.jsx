@@ -1,4 +1,4 @@
-import { Bot, CheckCircle, FileText, Loader2, RefreshCw, X } from 'lucide-react';
+import { AlertTriangle, Bot, CheckCircle, FileText, Loader2, RefreshCw, X } from 'lucide-react';
 
 export default function Reports({
   showReport,
@@ -29,7 +29,7 @@ export default function Reports({
               <div><span className="text-sm font-bold text-slate-600 dk-text-slate-400">Saved</span><p className="text-xl font-extrabold text-indigo-500">{formatMoney(currentMonthData.savings)}</p></div>
               <div><span className="text-sm font-bold text-slate-600 dk-text-slate-400">Savings Rate</span><p className="text-xl font-extrabold text-slate-900 dk-text-white">{currentMonthData.income ? ((currentMonthData.savings/currentMonthData.income)*100).toFixed(1) : 0}%</p></div>
             </div>
-            {reportError && <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-50 dk-bg-amber-900-20 border border-amber-200 dk-border-orange-800-30 text-amber-900 dk-text-amber-300 no-print"><span className="text-lg leading-none">⚠️</span><p className="text-xs font-semibold leading-relaxed">{reportError}</p></div>}
+            {reportError && <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-50 dk-bg-amber-900-20 border border-amber-200 dk-border-orange-800-30 text-amber-900 dk-text-amber-300 no-print"><AlertTriangle className="w-5 h-5 text-amber-600 dk-text-amber-400 shrink-0 mt-0.5" /><p className="text-xs font-semibold leading-relaxed">{reportError}</p></div>}
             <div className="p-6 bg-indigo-50 dk-bg-indigo-900-20 rounded-2xl border border-indigo-200 dk-border-indigo-800-50">
               <h3 className="font-bold flex items-center gap-2 mb-4 text-indigo-950 dk-text-indigo-200"><Bot className="w-5 h-5"/> AI Insights</h3>
               <div className="space-y-4">
