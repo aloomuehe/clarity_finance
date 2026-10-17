@@ -1,6 +1,35 @@
 import { useState } from 'react';
-import { CheckCircle, Landmark, Edit2, Trash2, X, Calendar } from 'lucide-react';
+import {
+  Landmark,
+  User,
+  FileText,
+  DollarSign,
+  CheckCircle,
+  Edit2,
+  Trash2,
+  Plus,
+  X,
+  ChevronRight,
+  ArrowDownLeft,
+  ArrowUpRight,
+} from 'lucide-react';
 import { getTodayStr } from '../utils/dates.js';
+import DatePicker from './DatePicker.jsx';
+
+const formatLoanDate = (dateStr) => {
+  if (!dateStr) return '';
+  const parts = String(dateStr).split('-');
+  if (parts.length === 3) {
+    const year = Number(parts[0]);
+    const month = Number(parts[1]) - 1;
+    const day = Number(parts[2]);
+    if (year && !Number.isNaN(month) && day) {
+      const d = new Date(year, month, day);
+      return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+  }
+  return dateStr;
+};
 
 export default function Loans({
   formatMoney,
@@ -13,6 +42,7 @@ export default function Loans({
   setPaymentInputs,
   recordLoanPayment,
   deleteLoanWithUndo,
+  CurrencyIcon = DollarSign,
 }) {
   const [loanFilter, setLoanFilter] = useState('lent'); // 'lent' | 'borrowed' | 'completed'
   const [completedFilter, setCompletedFilter] = useState('all'); // 'all' | 'lent' | 'borrowed'
@@ -31,6 +61,9 @@ export default function Loans({
   const activeLentLoans = (loans || []).filter(l => l.type === 'lent' && !isLoanCompleted(l));
   const activeBorrowedLoans = (loans || []).filter(l => l.type === 'borrowed' && !isLoanCompleted(l));
   const completedLoans = (loans || []).filter(isLoanCompleted);
+
+  const toReceive = (loans || []).filter(l => l.type === 'lent').reduce((acc, l) => acc + (l.amount - l.amountPaid), 0);
+  const toPay = (loans || []).filter(l => l.type === 'borrowed').reduce((acc, l) => acc + (l.amount - l.amountPaid), 0);
 
   let displayedLoans = [];
   if (loanFilter === 'lent') {
@@ -91,92 +124,246 @@ export default function Loans({
 
   return (
     <div className="animate-fade-in-up space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-emerald-600 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-6 text-white shadow"><h2 className="text-sm font-semibold text-emerald-100 mb-1">To Receive</h2><p className="text-4xl font-extrabold">{formatMoney(loans.filter(l => l.type === 'lent').reduce((acc, l) => acc + (l.amount - l.amountPaid), 0))}</p></div>
-        <div className="bg-rose-600 bg-gradient-to-br from-rose-500 to-orange-600 rounded-3xl p-6 text-white shadow"><h2 className="text-sm font-semibold text-rose-100 mb-1">To Pay</h2><p className="text-4xl font-extrabold">{formatMoney(loans.filter(l => l.type === 'borrowed').reduce((acc, l) => acc + (l.amount - l.amountPaid), 0))}</p></div>
+      {/* 1. Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Loans
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Track money lent, borrowed, and repayments.
+          </p>
+        </div>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1 space-y-6">
-          <div className="dark-card bg-white dk-bg-slate-800 rounded-3xl p-6 border border-slate-200 dk-border-slate-700 shadow-sm"><h3 className="text-lg font-bold text-slate-900 dk-text-white mb-6 flex items-center gap-2"><Landmark className="w-5 h-5 text-indigo-500" /> Log New Loan</h3>
-            <form onSubmit={handleLoanSubmit} className="space-y-4">
-              <div className="flex bg-slate-100 dk-bg-slate-900 p-1 rounded-xl border border-slate-200 dk-border-slate-700">
-                <button type="button" onClick={() => setLoanForm(p => ({...p, type: 'lent'}))} className={`flex-1 py-1.5 text-sm font-bold rounded-lg ${loanForm.type === 'lent' ? 'bg-white dk-bg-slate-700 text-emerald-600 dk-text-emerald-400 shadow-sm' : 'text-slate-600 dk-text-slate-400'}`}>I Lent</button>
-                <button type="button" onClick={() => setLoanForm(p => ({...p, type: 'borrowed'}))} className={`flex-1 py-1.5 text-sm font-bold rounded-lg ${loanForm.type === 'borrowed' ? 'bg-white dk-bg-slate-700 text-rose-600 dk-text-rose-400 shadow-sm' : 'text-slate-600 dk-text-slate-400'}`}>I Borrowed</button>
+
+      {/* 2. Top Summary Cards: To Receive & To Pay */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+        {/* To Receive Card */}
+        <div
+          onClick={() => setLoanFilter('lent')}
+          className={`bg-white dark:bg-slate-900 dk-bg-slate-800 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 dk-border-slate-700 shadow-xs flex items-center justify-between cursor-pointer group transition-all ${
+            loanFilter === 'lent' ? 'ring-1 ring-blue-500/30' : ''
+          }`}
+        >
+          <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
+            <div className="w-11 h-11 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-900/40">
+              <ArrowDownLeft className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                To Receive
+              </span>
+              <p className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight tabular-nums mt-0.5 truncate">
+                {formatMoney(toReceive)}
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:group-hover:text-slate-400 transition-colors shrink-0 ml-2" />
+        </div>
+
+        {/* To Pay Card */}
+        <div
+          onClick={() => setLoanFilter('borrowed')}
+          className={`bg-white dark:bg-slate-900 dk-bg-slate-800 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 dk-border-slate-700 shadow-xs flex items-center justify-between cursor-pointer group transition-all ${
+            loanFilter === 'borrowed' ? 'ring-1 ring-blue-500/30' : ''
+          }`}
+        >
+          <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
+            <div className="w-11 h-11 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-100 dark:border-rose-900/40">
+              <ArrowUpRight className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                To Pay
+              </span>
+              <p className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-rose-600 dark:text-rose-400 tracking-tight tabular-nums mt-0.5 truncate">
+                {formatMoney(toPay)}
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:group-hover:text-slate-400 transition-colors shrink-0 ml-2" />
+        </div>
+      </div>
+
+      {/* 3. Main 2-Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Column: Log New Loan Form Card */}
+        <div className="lg:col-span-5 xl:col-span-5 space-y-4">
+          <div className="bg-white dark:bg-slate-900 dk-bg-slate-800 rounded-2xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 dk-border-slate-700 shadow-xs">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-900/40">
+                <Landmark className="w-4 h-4" />
               </div>
-              <div><input type="text" value={loanForm.person} onChange={e => setLoanForm(p => ({...p, person: e.target.value}))} placeholder="Person/Entity" required className="w-full px-3 py-2 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-600 rounded-xl text-sm text-slate-900 dk-text-white font-medium outline-none focus:ring-2 focus:ring-indigo-500" /></div>
-              <div><input type="number" step="any" min="0.01" value={loanForm.amount} onChange={e => setLoanForm(p => ({...p, amount: e.target.value}))} placeholder="Amount" required className="w-full px-3 py-2 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-600 rounded-xl text-sm text-slate-900 dk-text-white font-bold outline-none focus:ring-2 focus:ring-indigo-500" /></div>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white dk-text-white">
+                Log New Loan
+              </h3>
+            </div>
+
+            <form onSubmit={handleLoanSubmit} className="space-y-3.5">
+              {/* Type Switcher */}
+              <div className="flex bg-slate-100 dark:bg-slate-800/80 dk-bg-slate-900 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60 dk-border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => setLoanForm(p => ({ ...p, type: 'lent' }))}
+                  className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                    loanForm.type === 'lent'
+                      ? 'bg-blue-600 text-white font-bold shadow-2xs'
+                      : 'text-slate-600 dark:text-slate-400 dk-text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'
+                  }`}
+                >
+                  I Lent
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLoanForm(p => ({ ...p, type: 'borrowed' }))}
+                  className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                    loanForm.type === 'borrowed'
+                      ? 'bg-blue-600 text-white font-bold shadow-2xs'
+                      : 'text-slate-600 dark:text-slate-400 dk-text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'
+                  }`}
+                >
+                  I Borrowed
+                </button>
+              </div>
+
+              {/* Person / Entity */}
               <div>
-                <label className="block text-xs font-bold text-slate-600 dk-text-slate-400 mb-1">Date</label>
-                <input
-                  type="date"
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 dk-text-slate-300 mb-1.5">
+                  Person / Entity
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 dark:text-slate-500 pointer-events-none">
+                    <User className="w-4 h-4" />
+                  </span>
+                  <input
+                    type="text"
+                    value={loanForm.person}
+                    onChange={e => setLoanForm(p => ({ ...p, person: e.target.value }))}
+                    placeholder="e.g. didi"
+                    required
+                    className="w-full h-10 pl-9.5 pr-3 bg-slate-50/70 dark:bg-slate-800/60 dk-bg-slate-900 border border-slate-200 dark:border-slate-700/80 dk-border-slate-600 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white dk-text-white font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* Amount */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 dk-text-slate-300 mb-1.5">
+                  Amount
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 dark:text-slate-500 pointer-events-none">
+                    <CurrencyIcon className="w-4 h-4" />
+                  </span>
+                  <input
+                    type="number"
+                    step="any"
+                    min="0.01"
+                    value={loanForm.amount}
+                    onChange={e => setLoanForm(p => ({ ...p, amount: e.target.value }))}
+                    placeholder="0.00"
+                    required
+                    className="w-full h-10 pl-9.5 pr-3 bg-slate-50/70 dark:bg-slate-800/60 dk-bg-slate-900 border border-slate-200 dark:border-slate-700/80 dk-border-slate-600 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white dk-text-white font-bold tabular-nums placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* Date */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 dk-text-slate-300 mb-1.5">
+                  Date
+                </label>
+                <DatePicker
                   value={loanForm.date || getTodayStr()}
-                  onChange={e => setLoanForm(p => ({...p, date: e.target.value}))}
+                  onChange={e => setLoanForm(p => ({ ...p, date: e.target.value }))}
+                  name="date"
                   required
-                  className="w-full px-3 py-2 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-600 rounded-xl text-sm text-slate-900 dk-text-white font-medium outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="h-10 text-xs sm:text-sm"
                 />
               </div>
+
+              {/* Note (optional) */}
               <div>
-                <input
-                  type="text"
-                  value={loanForm.note || ''}
-                  onChange={e => setLoanForm(p => ({...p, note: e.target.value}))}
-                  placeholder="Note (optional)"
-                  className="w-full px-3 py-2 bg-slate-50 dk-bg-slate-900 border border-slate-300 dk-border-slate-600 rounded-xl text-sm text-slate-900 dk-text-white font-medium outline-none focus:ring-2 focus:ring-indigo-500"
-                />
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 dk-text-slate-300 mb-1.5">
+                  Note (optional)
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 dark:text-slate-500 pointer-events-none">
+                    <FileText className="w-4 h-4" />
+                  </span>
+                  <input
+                    type="text"
+                    value={loanForm.note || ''}
+                    onChange={e => setLoanForm(p => ({ ...p, note: e.target.value }))}
+                    placeholder="e.g. for laptop"
+                    className="w-full h-10 pl-9.5 pr-3 bg-slate-50/70 dark:bg-slate-800/60 dk-bg-slate-900 border border-slate-200 dark:border-slate-700/80 dk-border-slate-600 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white dk-text-white font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                  />
+                </div>
               </div>
-              <button type="submit" className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow transition-colors cursor-pointer">Log Loan</button>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                className="w-full h-10 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold rounded-xl text-xs sm:text-sm shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer mt-2"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Log Loan</span>
+              </button>
             </form>
           </div>
         </div>
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+
+        {/* Right Column: Tabs & Loan Records */}
+        <div className="lg:col-span-7 xl:col-span-7 space-y-4">
+          {/* Tabs & Sub-filters Header */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
             {/* Top-level filter: Lent | Borrowed | Completed */}
-            <div className="flex bg-slate-100 dk-bg-slate-900 p-1 rounded-xl border border-slate-200 dk-border-slate-700">
+            <div className="inline-flex bg-slate-100 dark:bg-slate-800/80 dk-bg-slate-900 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60 dk-border-slate-700">
               <button
                 type="button"
                 onClick={() => setLoanFilter('lent')}
-                className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+                className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   loanFilter === 'lent'
-                    ? 'bg-white dk-bg-slate-700 text-emerald-600 dk-text-emerald-400 shadow-sm'
-                    : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-white'
+                    ? 'bg-white dark:bg-slate-900 dk-bg-slate-700 text-blue-600 dark:text-blue-400 font-bold shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 dk-text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'
                 }`}
               >
-                Lent
+                Lent {activeLentLoans.length > 0 && <span className="ml-1 text-[11px] opacity-80">({activeLentLoans.length})</span>}
               </button>
               <button
                 type="button"
                 onClick={() => setLoanFilter('borrowed')}
-                className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+                className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   loanFilter === 'borrowed'
-                    ? 'bg-white dk-bg-slate-700 text-rose-600 dk-text-rose-400 shadow-sm'
-                    : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-white'
+                    ? 'bg-white dark:bg-slate-900 dk-bg-slate-700 text-blue-600 dark:text-blue-400 font-bold shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 dk-text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'
                 }`}
               >
-                Borrowed
+                Borrowed {activeBorrowedLoans.length > 0 && <span className="ml-1 text-[11px] opacity-80">({activeBorrowedLoans.length})</span>}
               </button>
               <button
                 type="button"
                 onClick={() => setLoanFilter('completed')}
-                className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+                className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   loanFilter === 'completed'
-                    ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-400 shadow-sm'
-                    : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-white'
+                    ? 'bg-white dark:bg-slate-900 dk-bg-slate-700 text-blue-600 dark:text-blue-400 font-bold shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 dk-text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'
                 }`}
               >
-                Completed
+                Completed {completedLoans.length > 0 && <span className="ml-1 text-[11px] opacity-80">({completedLoans.length})</span>}
               </button>
             </div>
 
             {/* Completed sub-filter: All | Lent | Borrowed */}
             {loanFilter === 'completed' && (
-              <div className="flex bg-slate-100 dk-bg-slate-900 p-1 rounded-xl border border-slate-200 dk-border-slate-700">
+              <div className="inline-flex bg-slate-100 dark:bg-slate-800/80 dk-bg-slate-900 p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60 dk-border-slate-700">
                 <button
                   type="button"
                   onClick={() => setCompletedFilter('all')}
-                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors ${
+                  className={`px-2.5 py-1 text-xs rounded-md transition-all cursor-pointer ${
                     completedFilter === 'all'
-                      ? 'bg-white dk-bg-slate-700 text-indigo-600 dk-text-indigo-400 shadow-sm'
-                      : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-white'
+                      ? 'bg-white dark:bg-slate-900 dk-bg-slate-700 text-blue-600 dark:text-blue-400 font-semibold shadow-2xs'
+                      : 'text-slate-600 dark:text-slate-400 dk-text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'
                   }`}
                 >
                   All
@@ -184,10 +371,10 @@ export default function Loans({
                 <button
                   type="button"
                   onClick={() => setCompletedFilter('lent')}
-                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors ${
+                  className={`px-2.5 py-1 text-xs rounded-md transition-all cursor-pointer ${
                     completedFilter === 'lent'
-                      ? 'bg-white dk-bg-slate-700 text-emerald-600 dk-text-emerald-400 shadow-sm'
-                      : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-white'
+                      ? 'bg-white dark:bg-slate-900 dk-bg-slate-700 text-emerald-600 dark:text-emerald-400 font-semibold shadow-2xs'
+                      : 'text-slate-600 dark:text-slate-400 dk-text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'
                   }`}
                 >
                   Lent
@@ -195,10 +382,10 @@ export default function Loans({
                 <button
                   type="button"
                   onClick={() => setCompletedFilter('borrowed')}
-                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors ${
+                  className={`px-2.5 py-1 text-xs rounded-md transition-all cursor-pointer ${
                     completedFilter === 'borrowed'
-                      ? 'bg-white dk-bg-slate-700 text-rose-600 dk-text-rose-400 shadow-sm'
-                      : 'text-slate-600 dk-text-slate-400 hover:text-slate-900 dk-hover-text-white'
+                      ? 'bg-white dark:bg-slate-900 dk-bg-slate-700 text-rose-600 dark:text-rose-400 font-semibold shadow-2xs'
+                      : 'text-slate-600 dark:text-slate-400 dk-text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'
                   }`}
                 >
                   Borrowed
@@ -207,55 +394,74 @@ export default function Loans({
             )}
           </div>
 
+          {/* Empty State */}
           {displayedLoans.length === 0 && (
-            <div className="dark-card bg-white dk-bg-slate-800 rounded-3xl p-10 border border-dashed border-slate-300 dk-border-slate-600 flex flex-col items-center justify-center text-center">
-              <Landmark className="w-10 h-10 text-slate-300 dk-text-slate-400 mb-3" />
-              <p className="font-semibold text-slate-700 dk-text-slate-300">{getEmptyMessage()}</p>
-              <p className="text-sm text-slate-500 dk-text-slate-400 mt-1">{getEmptySubtitle()}</p>
+            <div className="bg-white dark:bg-slate-900 dk-bg-slate-800 rounded-2xl p-8 sm:p-10 border border-slate-200/90 dark:border-slate-800 dk-border-slate-700 shadow-xs flex flex-col items-center justify-center text-center">
+              <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3 text-slate-400 dark:text-slate-500">
+                <Landmark className="w-6 h-6" />
+              </div>
+              <p className="font-bold text-sm text-slate-800 dark:text-slate-200 dk-text-slate-300">
+                {getEmptyMessage()}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 dk-text-slate-400 mt-1 max-w-sm">
+                {getEmptySubtitle()}
+              </p>
             </div>
           )}
+
+          {/* Loan Records List */}
           {displayedLoans.map(loan => {
-            const isSettled = loan.amountPaid >= loan.amount;
+            const isSettled = Number(loan.amountPaid) >= Number(loan.amount);
+            const remaining = Math.max(0, Number(loan.amount) - Number(loan.amountPaid));
+            const progressPercent = Math.min((Number(loan.amountPaid) / (Number(loan.amount) || 1)) * 100, 100);
+
             return (
-              <div key={loan.id} className="dark-card bg-white dk-bg-slate-800 rounded-2xl p-5 border border-slate-200 dk-border-slate-700 shadow-sm relative overflow-hidden group">
-                {isSettled && (
-                  <div className="absolute top-0 right-0 p-4">
-                    <CheckCircle className="w-6 h-6 text-emerald-500 opacity-50" />
-                  </div>
-                )}
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <span
-                      className={`px-2 py-0.5 rounded text-xs font-bold ${
-                        loan.type === 'lent'
-                          ? 'bg-emerald-100 text-emerald-800 dk-bg-emerald-900-30 dk-text-emerald-300'
-                          : 'bg-rose-100 text-rose-800 dk-bg-rose-900-20 dk-text-rose-300'
-                      }`}
-                    >
-                      {loan.type === 'lent' ? 'LENT TO' : 'BORROWED FROM'}
-                    </span>
-                    <span className="font-bold ml-2 text-slate-900 dk-text-white">{loan.person}</span>
-                    <p className="text-xs text-slate-500 dk-text-slate-400 mt-1 font-medium">
-                      {loan.note ? `${loan.note} • ` : ''}{loan.date || 'No date'}
+              <div
+                key={loan.id}
+                className="bg-white dark:bg-slate-900 dk-bg-slate-800 rounded-2xl p-5 border border-slate-200/90 dark:border-slate-800 dk-border-slate-700 shadow-xs relative space-y-4 hover:border-slate-300 dark:hover:border-slate-700 transition-colors"
+              >
+                {/* Top Section: Badge, Person, Date, Amount & Actions */}
+                <div className="flex justify-between items-start gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                          loan.type === 'lent'
+                            ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40 dk-bg-emerald-900-30 dk-text-emerald-300'
+                            : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200/60 dark:border-rose-800/40 dk-bg-rose-900-20 dk-text-rose-300'
+                        }`}
+                      >
+                        {loan.type === 'lent' ? 'LENT TO' : 'BORROWED FROM'}
+                      </span>
+                      <h4 className="font-bold text-base text-slate-900 dark:text-white dk-text-white truncate">
+                        {loan.person}
+                      </h4>
+                    </div>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 dk-text-slate-400 mt-1 font-medium">
+                      {formatLoanDate(loan.date) || 'No date'}
+                      {loan.note ? ` • ${loan.note}` : ''}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xl font-black text-slate-900 dk-text-white">{formatMoney(loan.amount)}</p>
-                    <div className="flex items-center justify-end gap-2 mt-1 transition-opacity">
+
+                  <div className="text-right shrink-0">
+                    <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white dk-text-white tracking-tight tabular-nums">
+                      {formatMoney(loan.amount)}
+                    </p>
+                    <div className="flex items-center justify-end gap-2 mt-1">
                       <button
                         type="button"
                         onClick={() => handleOpenEdit(loan)}
-                        className="text-xs text-slate-400 hover:text-indigo-600 dk-hover-text-indigo-400 font-medium cursor-pointer inline-flex items-center gap-1"
+                        className="text-xs text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium cursor-pointer inline-flex items-center gap-1 transition-colors"
                         title="Edit loan"
                       >
                         <Edit2 className="w-3 h-3" />
                         <span>Edit</span>
                       </button>
-                      <span className="text-slate-300 dk-text-slate-600 text-xs">•</span>
+                      <span className="text-slate-300 dark:text-slate-600 text-xs">•</span>
                       <button
                         type="button"
                         onClick={() => deleteLoanWithUndo(loan)}
-                        className="text-xs text-slate-400 hover:text-rose-500 dk-hover-text-rose-300 font-medium cursor-pointer inline-flex items-center gap-1"
+                        className="text-xs text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 font-medium cursor-pointer inline-flex items-center gap-1 transition-colors"
                         title="Delete loan"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -264,36 +470,62 @@ export default function Loans({
                     </div>
                   </div>
                 </div>
-                <div className="bg-slate-50 dk-bg-slate-900 p-4 rounded-xl border border-slate-200 dk-border-slate-700 shadow-inner">
-                  <div className="flex justify-between text-sm mb-2 font-semibold text-slate-800 dk-text-slate-200">
-                    <span>Paid Back</span>
-                    <span className="font-bold text-slate-900 dk-text-slate-100">
-                      {formatMoney(loan.amountPaid)} / {formatMoney(loan.amount)}
+
+                {/* Progress & Repayment Section */}
+                <div className="space-y-2 pt-1">
+                  <div className="flex justify-between items-center text-xs font-semibold">
+                    <span className="text-slate-600 dark:text-slate-400">Paid back</span>
+                    <span className="text-slate-900 dark:text-slate-100 tabular-nums">
+                      {formatMoney(loan.amountPaid)} of {formatMoney(loan.amount)}
                     </span>
                   </div>
-                  <div className="h-2.5 w-full bg-slate-200 dk-bg-slate-800 rounded-full overflow-hidden mb-4 border border-slate-200/50 dk-border-slate-700/50">
+
+                  {/* Progress bar */}
+                  <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-indigo-500 dk-bg-indigo-400 rounded-full"
-                      style={{ width: `${Math.min((Number(loan.amountPaid) / (Number(loan.amount) || 1)) * 100, 100)}%` }}
-                    ></div>
+                      className={`h-full rounded-full transition-all duration-300 ${
+                        isSettled ? 'bg-emerald-500' : 'bg-blue-600 dark:bg-blue-500'
+                      }`}
+                      style={{ width: `${progressPercent}%` }}
+                    />
                   </div>
-                  {!isSettled && (
-                    <div className="flex gap-2">
-                      <input
-                        type="number"
-                        step="any"
-                        value={paymentInputs[loan.id] || ''}
-                        onChange={e => setPaymentInputs({ ...paymentInputs, [loan.id]: e.target.value })}
-                        placeholder="Log partial payment"
-                        className="flex-1 px-3 py-2 bg-white dk-bg-slate-800 border border-slate-300 dk-border-slate-600 rounded-lg text-sm text-slate-900 dk-text-white font-bold outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
+
+                  {/* Inline Repayment Row (if not settled) */}
+                  {!isSettled ? (
+                    <div className="flex items-center gap-2 pt-1">
+                      <div className="relative flex-1">
+                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 dark:text-slate-500 pointer-events-none">
+                          <CurrencyIcon className="w-3.5 h-3.5" />
+                        </span>
+                        <input
+                          type="number"
+                          step="any"
+                          min="0.01"
+                          max={remaining}
+                          value={paymentInputs[loan.id] || ''}
+                          onChange={e => setPaymentInputs({ ...paymentInputs, [loan.id]: e.target.value })}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              recordLoanPayment(loan.id);
+                            }
+                          }}
+                          placeholder="Record a repayment"
+                          className="w-full h-9 pl-9 pr-3 bg-slate-50/70 dark:bg-slate-800/50 dk-bg-slate-900 border border-slate-200 dark:border-slate-700/80 dk-border-slate-600 rounded-xl text-xs sm:text-sm font-semibold tabular-nums text-slate-900 dark:text-white dk-text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                        />
+                      </div>
                       <button
                         type="button"
                         onClick={() => recordLoanPayment(loan.id)}
-                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold shadow-sm transition-colors cursor-pointer"
+                        className="h-9 px-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl text-xs font-semibold shadow-2xs transition-colors shrink-0 cursor-pointer"
                       >
                         Record
                       </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 pt-1">
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      <span>Fully settled</span>
                     </div>
                   )}
                 </div>
@@ -305,16 +537,18 @@ export default function Loans({
 
       {/* Edit Loan Modal */}
       {editingLoan && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[80] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="dark-card bg-white dk-bg-slate-900 rounded-3xl w-full max-w-md p-6 relative shadow-2xl animate-fade-in-up border border-slate-200 dk-border-slate-800">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[80] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 dk-bg-slate-900 rounded-3xl w-full max-w-md p-6 relative shadow-2xl animate-fade-in-up border border-slate-200/90 dark:border-slate-800 dk-border-slate-800">
             <div className="flex items-center justify-between gap-3 mb-5">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-indigo-100 dk-bg-indigo-900-30 rounded-2xl text-indigo-600 dk-text-indigo-400">
-                  <Edit2 className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-900/40">
+                  <Edit2 className="w-4 h-4" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900 dk-text-white">Edit Loan</h2>
-                  <p className="text-xs text-slate-500 dk-text-slate-400 font-medium">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white dk-text-white">
+                    Edit Loan
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 dk-text-slate-400 font-medium">
                     Update loan details and linked transaction
                   </p>
                 </div>
@@ -322,93 +556,121 @@ export default function Loans({
               <button
                 type="button"
                 onClick={handleCloseEdit}
-                className="p-2 bg-slate-100 dk-bg-slate-800 rounded-full hover:bg-slate-200 dk-hover-bg-slate-700 text-slate-700 dk-text-slate-200 transition-colors cursor-pointer"
+                className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
                 title="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveEdit} className="space-y-4">
+            <form onSubmit={handleSaveEdit} className="space-y-3.5">
               {/* Classification indicator (read-only, preserves lent/borrowed) */}
-              <div className="p-3 bg-slate-50 dk-bg-slate-800 rounded-2xl border border-slate-200 dk-border-slate-700 flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-600 dk-text-slate-300">Classification</span>
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 dk-bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  Classification
+                </span>
                 <span
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+                  className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold ${
                     editingLoan.type === 'lent'
-                      ? 'bg-emerald-100 text-emerald-800 dk-bg-emerald-900-30 dk-text-emerald-300'
-                      : 'bg-rose-100 text-rose-800 dk-bg-rose-900-20 dk-text-rose-300'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40'
+                      : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200/60 dark:border-rose-800/40'
                   }`}
                 >
                   {editingLoan.type === 'lent' ? 'Lent (You are owed)' : 'Borrowed (You owe)'}
                 </span>
               </div>
 
+              {/* Person / Entity */}
               <div>
-                <label className="block text-xs font-bold text-slate-600 dk-text-slate-400 mb-1">Person / Entity</label>
-                <input
-                  type="text"
-                  value={editFormData.person}
-                  onChange={e => setEditFormData(p => ({ ...p, person: e.target.value }))}
-                  required
-                  placeholder="Person or entity name"
-                  className="w-full px-3 py-2 bg-slate-50 dk-bg-slate-800 border border-slate-300 dk-border-slate-700 rounded-xl text-sm text-slate-900 dk-text-white font-medium outline-none focus:ring-2 focus:ring-indigo-500"
-                />
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Person / Entity
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 dark:text-slate-500 pointer-events-none">
+                    <User className="w-4 h-4" />
+                  </span>
+                  <input
+                    type="text"
+                    value={editFormData.person}
+                    onChange={e => setEditFormData(p => ({ ...p, person: e.target.value }))}
+                    required
+                    placeholder="Person or entity name"
+                    className="w-full h-10 pl-9.5 pr-3 bg-slate-50/70 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white font-medium outline-none focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                  />
+                </div>
               </div>
 
+              {/* Original Loan Amount */}
               <div>
-                <label className="block text-xs font-bold text-slate-600 dk-text-slate-400 mb-1">Original Loan Amount</label>
-                <input
-                  type="number"
-                  step="any"
-                  min={Number(editingLoan.amountPaid) > 0 ? Number(editingLoan.amountPaid) : 0.01}
-                  value={editFormData.amount}
-                  onChange={e => setEditFormData(p => ({ ...p, amount: e.target.value }))}
-                  required
-                  className="w-full px-3 py-2 bg-slate-50 dk-bg-slate-800 border border-slate-300 dk-border-slate-700 rounded-xl text-sm text-slate-900 dk-text-white font-bold outline-none focus:ring-2 focus:ring-indigo-500"
-                />
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Original Loan Amount
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 dark:text-slate-500 pointer-events-none">
+                    <CurrencyIcon className="w-4 h-4" />
+                  </span>
+                  <input
+                    type="number"
+                    step="any"
+                    min={Number(editingLoan.amountPaid) > 0 ? Number(editingLoan.amountPaid) : 0.01}
+                    value={editFormData.amount}
+                    onChange={e => setEditFormData(p => ({ ...p, amount: e.target.value }))}
+                    required
+                    className="w-full h-10 pl-9.5 pr-3 bg-slate-50/70 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white font-bold tabular-nums outline-none focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                  />
+                </div>
                 {Number(editingLoan.amountPaid) > 0 && (
-                  <p className="text-[11px] text-amber-600 dk-text-amber-400 mt-1 font-medium">
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1 font-medium">
                     Repaid so far: {formatMoney(editingLoan.amountPaid)}. Amount cannot be less than {formatMoney(editingLoan.amountPaid)}.
                   </p>
                 )}
               </div>
 
+              {/* Date */}
               <div>
-                <label className="block text-xs font-bold text-slate-600 dk-text-slate-400 mb-1 flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-indigo-500" /> Loan Date
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Loan Date
                 </label>
-                <input
-                  type="date"
+                <DatePicker
                   value={editFormData.date}
                   onChange={e => setEditFormData(p => ({ ...p, date: e.target.value }))}
+                  name="date"
                   required
-                  className="w-full px-3 py-2 bg-slate-50 dk-bg-slate-800 border border-slate-300 dk-border-slate-700 rounded-xl text-sm text-slate-900 dk-text-white font-medium outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="h-10 text-xs sm:text-sm"
                 />
               </div>
 
+              {/* Note (optional) */}
               <div>
-                <label className="block text-xs font-bold text-slate-600 dk-text-slate-400 mb-1">Note (optional)</label>
-                <input
-                  type="text"
-                  value={editFormData.note}
-                  onChange={e => setEditFormData(p => ({ ...p, note: e.target.value }))}
-                  placeholder="e.g. Dinner, Rent share..."
-                  className="w-full px-3 py-2 bg-slate-50 dk-bg-slate-800 border border-slate-300 dk-border-slate-700 rounded-xl text-sm text-slate-900 dk-text-white font-medium outline-none focus:ring-2 focus:ring-indigo-500"
-                />
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Note (optional)
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 dark:text-slate-500 pointer-events-none">
+                    <FileText className="w-4 h-4" />
+                  </span>
+                  <input
+                    type="text"
+                    value={editFormData.note}
+                    onChange={e => setEditFormData(p => ({ ...p, note: e.target.value }))}
+                    placeholder="e.g. Dinner, Rent share..."
+                    className="w-full h-10 pl-9.5 pr-3 bg-slate-50/70 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white font-medium outline-none focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                  />
+                </div>
               </div>
 
-              <div className="flex gap-3 pt-2">
+              {/* Buttons */}
+              <div className="flex gap-2.5 pt-2">
                 <button
                   type="button"
                   onClick={handleCloseEdit}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dk-bg-slate-800 dk-hover-bg-slate-700 text-slate-700 dk-text-slate-200 font-bold rounded-xl transition-colors text-sm cursor-pointer"
+                  className="flex-1 h-10 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl transition-colors text-xs sm:text-sm cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow transition-colors text-sm cursor-pointer"
+                  className="flex-1 h-10 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold rounded-xl shadow-2xs transition-colors text-xs sm:text-sm cursor-pointer"
                 >
                   Save Changes
                 </button>

@@ -226,7 +226,7 @@ export default function App() {
       current: Math.min(Math.abs(Number(g.target) || 0), Math.max(0, Number(g.current) || 0)),
     }));
   });
-  const [goalForm, setGoalForm] = useState({ name: '', target: '', current: '' });
+  const [goalForm, setGoalForm] = useState({ name: '', target: '', current: '', targetDate: '', note: '' });
   const [goalInputs, setGoalInputs] = useState({});
 
   const [magicPrompt, setMagicPrompt] = useState('');
@@ -415,16 +415,16 @@ export default function App() {
   const getHeatmapColor = (spent, dateStr) => {
     const todayStr = getTodayStr();
     if (spent > 0) {
-      if (spent <= heatmapThresholds.green) return 'bg-emerald-400 dk-bg-emerald-500';
-      if (spent <= heatmapThresholds.yellow) return 'bg-yellow-400 dk-bg-yellow-500';
-      if (spent <= heatmapThresholds.orange) return 'bg-orange-400 dk-bg-orange-500';
-      return 'bg-rose-500 dk-bg-rose-600';
+      if (spent <= heatmapThresholds.green) return 'bg-emerald-400 dark:bg-emerald-500 text-white';
+      if (spent <= heatmapThresholds.yellow) return 'bg-amber-400 dark:bg-amber-500 text-slate-900';
+      if (spent <= heatmapThresholds.orange) return 'bg-orange-400 dark:bg-orange-500 text-white';
+      return 'bg-rose-500 dark:bg-rose-600 text-white';
     }
     // spent === 0
     if (dateStr && dateStr > todayStr) {
-      return 'bg-slate-100 dk-bg-slate-800-50';
+      return 'bg-slate-100 dark:bg-slate-800/60 text-slate-400 dark:text-slate-500';
     }
-    return 'bg-emerald-400 dk-bg-emerald-500';
+    return 'bg-emerald-400 dark:bg-emerald-500 text-white';
   };
 
   const sixMonthTrend = useMemo(() => calculateSixMonthTrend(monthlyData, selectedMonth), [monthlyData, selectedMonth]);
@@ -569,6 +569,18 @@ export default function App() {
   };
 
   const initiateEdit = (transaction) => {
+    if (!transaction) {
+      setEditingId(null);
+      setFormData({
+        type: 'expense',
+        amount: '',
+        category: 'food',
+        paymentMethod: 'upi',
+        date: getTodayStr(),
+        note: '',
+      });
+      return;
+    }
     setEditingId(transaction.id);
     setFormData({
       type: transaction.type,
@@ -638,8 +650,15 @@ export default function App() {
       setToast({ message: 'Enter a positive target and saved amount between zero and the target.' });
       return;
     }
-    setGoals(prev => [...prev, { id: nextId('goal'), name: goalForm.name.trim(), target, current }]);
-    setGoalForm({ name: '', target: '', current: '' });
+    setGoals(prev => [...prev, {
+      id: nextId('goal'),
+      name: goalForm.name.trim(),
+      target,
+      current,
+      targetDate: goalForm.targetDate || '',
+      note: goalForm.note || '',
+    }]);
+    setGoalForm({ name: '', target: '', current: '', targetDate: '', note: '' });
     setToast({ message: 'Savings goal added!' });
     setTimeout(() => setToast(null), 3000);
   };
@@ -1025,6 +1044,8 @@ export default function App() {
               name: item.name.trim(),
               target,
               current: Math.min(target, Math.max(0, Number(item.current) || 0)),
+              targetDate: typeof item.targetDate === 'string' ? item.targetDate : '',
+              note: typeof item.note === 'string' ? item.note : '',
             };
           });
         }
@@ -1648,6 +1669,7 @@ export default function App() {
             setPaymentInputs={setPaymentInputs}
             recordLoanPayment={recordLoanPayment}
             deleteLoanWithUndo={deleteLoanWithUndo}
+            CurrencyIcon={CurrencyIcon}
           />
         )}
 
@@ -1663,6 +1685,7 @@ export default function App() {
             addGoalContribution={addGoalContribution}
             deleteWithUndo={deleteWithUndo}
             setGoals={setGoals}
+            CurrencyIcon={CurrencyIcon}
           />
         )}
 
