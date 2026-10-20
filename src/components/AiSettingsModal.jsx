@@ -149,7 +149,7 @@ export default function AiSettingsModal({
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[80] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="dark-card bg-white dk-bg-slate-900 rounded-3xl w-full max-w-xl p-6 sm:p-8 relative shadow-2xl animate-fade-in-up border border-slate-200 dk-border-slate-800 max-h-[92vh] flex flex-col">
+      <div className="dark-card bg-white dk-bg-slate-900 rounded-3xl w-full max-w-xl p-6 sm:p-8 relative shadow-2xl modal-spring border border-slate-200 dk-border-slate-800 max-h-[92vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between gap-3 mb-5 shrink-0">
           <div className="flex items-center gap-3">

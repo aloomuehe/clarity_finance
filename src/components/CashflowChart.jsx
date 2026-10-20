@@ -1,40 +1,80 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ArrowUpRight } from 'lucide-react';
+import { calculateDailyTrend, calculateWeeklyTrend } from '../utils/calculations.js';
+import { getTodayStr } from '../utils/dates.js';
 
 export default function CashflowChart({
   sixMonthTrend,
+  transactions = [],
+  selectedMonth = '',
   formatMoney,
   formatCompactMoney,
   onOpenModal,
 }) {
+  const [timeframe, setTimeframe] = useState('monthly'); // 'daily' | 'weekly' | 'monthly'
   const [activeSeries, setActiveSeries] = useState('all'); // 'all' | 'income' | 'expense' | 'savings'
   const [hoveredIdx, setHoveredIdx] = useState(null);
 
-  if (!sixMonthTrend || !sixMonthTrend.trend || sixMonthTrend.trend.length === 0) {
+  // Derive target reference date based on selected month or today
+  const baseDate = useMemo(() => {
+    const todayStr = getTodayStr();
+    const isCurrentMonth = !selectedMonth || selectedMonth === todayStr.slice(0, 7);
+    if (!isCurrentMonth && selectedMonth) {
+      const parts = selectedMonth.split('-');
+      const y = Number(parts[0]);
+      const m = Number(parts[1]);
+      if (y && m) {
+        const lastDay = new Date(y, m, 0).getDate();
+        return `${selectedMonth}-${String(lastDay).padStart(2, '0')}`;
+      }
+    }
+    return todayStr;
+  }, [selectedMonth]);
+
+  // Compute active trend data based on timeframe toggle
+  const currentTrendData = useMemo(() => {
+    if (timeframe === 'daily') {
+      return calculateDailyTrend(transactions, baseDate, 7);
+    }
+    if (timeframe === 'weekly') {
+      return calculateWeeklyTrend(transactions, baseDate, 6);
+    }
+    return sixMonthTrend;
+  }, [timeframe, transactions, baseDate, sixMonthTrend]);
+
+  const subtitle = useMemo(() => {
+    if (timeframe === 'daily') return 'Income vs expenses across past 7 days';
+    if (timeframe === 'weekly') return 'Income vs expenses across past 6 weeks';
+    return 'Income vs expenses across past 6 months';
+  }, [timeframe]);
+
+  if (!currentTrendData || !currentTrendData.trend || currentTrendData.trend.length === 0) {
     return null;
   }
 
-  const { trend, maxVal, axisTicks } = sixMonthTrend;
-  const numMonths = trend.length;
+  const { trend, maxVal, axisTicks } = currentTrendData;
+  const numItems = trend.length;
 
   // Build SVG points for each line
-  // Coordinates are percentage-based: x from 0 to 100, y from 0 to 100 (where 0 is top and 100 is bottom)
-  const getX = (i) => ((i + 0.5) / numMonths) * 100;
-  const getY = (val) => 100 - (Math.max(0, val) / maxVal) * 85 - 8; // leave 8% padding top and bottom
+  // Coordinates are percentage-based: x from 0 to 100, y from 0 to 100 (0 top, 100 bottom)
+  const getX = (i) => ((i + 0.5) / numItems) * 100;
+  const getY = (val) => 100 - (Math.max(0, val) / (maxVal || 1)) * 85 - 8; // 8% padding top and bottom
 
   const incomePoints = trend.map((t, i) => `${getX(i)},${getY(t.income)}`).join(' ');
   const expensePoints = trend.map((t, i) => `${getX(i)},${getY(t.expense)}`).join(' ');
   const savingsPoints = trend.map((t, i) => `${getX(i)},${getY(Math.max(0, t.saved))}`).join(' ');
 
   // Gradient area path for income or active series
-  const activeAreaPoints = (activeSeries === 'expense' ? trend.map((t, i) => `${getX(i)},${getY(t.expense)}`) : trend.map((t, i) => `${getX(i)},${getY(t.income)}`)).join(' ');
-  const areaPath = `M ${getX(0)},100 L ${activeAreaPoints} L ${getX(numMonths - 1)},100 Z`;
+  const activeAreaPoints = (activeSeries === 'expense'
+    ? trend.map((t, i) => `${getX(i)},${getY(t.expense)}`)
+    : trend.map((t, i) => `${getX(i)},${getY(t.income)}`)).join(' ');
+  const areaPath = `M ${getX(0)},100 L ${activeAreaPoints} L ${getX(numItems - 1)},100 Z`;
 
   const hoveredData = hoveredIdx !== null ? trend[hoveredIdx] : null;
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between relative">
-      {/* Header Row */}
+    <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between relative card-lift">
+      {/* Header Row: Title & Subtitle on left, Timeframe Switcher & Series Filter on right */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div>
           <div className="flex items-center gap-2">
@@ -53,31 +93,56 @@ export default function CashflowChart({
             )}
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Income vs expenses across past 6 months
+            {subtitle}
           </p>
         </div>
 
-        {/* Series Filter Tabs */}
-        <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl text-xs font-semibold">
-          {[
-            { id: 'all', label: 'All' },
-            { id: 'income', label: 'Income' },
-            { id: 'expense', label: 'Expense' },
-            { id: 'savings', label: 'Savings' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveSeries(tab.id)}
-              className={`px-2.5 py-1 rounded-lg transition-all ${
-                activeSeries === tab.id
-                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-2xs font-bold'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        {/* Controls Container */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {/* Timeframe Switcher: Daily | Weekly | Monthly matching reference design */}
+          <div className="inline-flex items-center bg-slate-100 dark:bg-slate-950 p-1 rounded-full border border-slate-200/90 dark:border-slate-800 text-xs font-semibold shadow-inner">
+            {[
+              { id: 'daily', label: 'Daily' },
+              { id: 'weekly', label: 'Weekly' },
+              { id: 'monthly', label: 'Monthly' },
+            ].map((tf) => (
+              <button
+                key={tf.id}
+                type="button"
+                onClick={() => setTimeframe(tf.id)}
+                className={`px-3 sm:px-3.5 py-1 rounded-full transition-all cursor-pointer ${
+                  timeframe === tf.id
+                    ? 'bg-indigo-600 dark:bg-indigo-600 text-white font-bold shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'
+                }`}
+              >
+                {tf.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Series Filter Tabs: All | Income | Expense | Savings */}
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl text-xs font-semibold">
+            {[
+              { id: 'all', label: 'All' },
+              { id: 'income', label: 'Income' },
+              { id: 'expense', label: 'Expense' },
+              { id: 'savings', label: 'Savings' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveSeries(tab.id)}
+                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                  activeSeries === tab.id
+                    ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-2xs font-bold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -99,6 +164,7 @@ export default function CashflowChart({
 
         {/* SVG Curve Canvas */}
         <svg
+          key={timeframe}
           className="absolute inset-0 w-full h-full overflow-visible pointer-events-none"
           viewBox="0 0 100 100"
           preserveAspectRatio="none"
@@ -112,6 +178,10 @@ export default function CashflowChart({
               <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.15" />
               <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.0" />
             </linearGradient>
+            <linearGradient id="cfSavingsGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#10b981" stopOpacity="0.18" />
+              <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+            </linearGradient>
           </defs>
 
           {/* Area Fill for Primary Line */}
@@ -120,6 +190,9 @@ export default function CashflowChart({
           )}
           {activeSeries === 'expense' && (
             <path d={areaPath} fill="url(#cfExpenseGrad)" />
+          )}
+          {activeSeries === 'savings' && (
+            <path d={areaPath} fill="url(#cfSavingsGrad)" />
           )}
 
           {/* Income Line (Blue / Cyan) */}
@@ -132,6 +205,7 @@ export default function CashflowChart({
               vectorEffect="non-scaling-stroke"
               strokeLinecap="round"
               strokeLinejoin="round"
+              className="chart-draw"
             />
           )}
 
@@ -146,6 +220,7 @@ export default function CashflowChart({
               vectorEffect="non-scaling-stroke"
               strokeLinecap="round"
               strokeLinejoin="round"
+              className="chart-draw"
             />
           )}
 
@@ -159,6 +234,7 @@ export default function CashflowChart({
               vectorEffect="non-scaling-stroke"
               strokeLinecap="round"
               strokeLinejoin="round"
+              className="chart-draw"
             />
           )}
         </svg>
@@ -185,7 +261,11 @@ export default function CashflowChart({
                 {(activeSeries === 'all' || activeSeries === 'income') && (
                   <div
                     className={`absolute w-2.5 h-2.5 rounded-full bg-blue-600 border-2 border-white dark:border-slate-900 transition-transform ${
-                      isHovered ? 'scale-125 ring-2 ring-blue-400/50' : 'opacity-80'
+                      isHovered
+                        ? 'scale-125 ring-2 ring-blue-400/50'
+                        : isLive
+                        ? 'ring-4 ring-blue-500/30 shadow-[0_0_8px_rgba(37,99,235,0.7)]'
+                        : 'opacity-80'
                     }`}
                     style={{ bottom: `${100 - getY(t.income)}%`, transform: 'translateY(50%)' }}
                   />
@@ -193,13 +273,17 @@ export default function CashflowChart({
                 {(activeSeries === 'all' || activeSeries === 'expense') && (
                   <div
                     className={`absolute w-2.5 h-2.5 rounded-full bg-rose-500 border-2 border-white dark:border-slate-900 transition-transform ${
-                      isHovered ? 'scale-125 ring-2 ring-rose-400/50' : 'opacity-80'
+                      isHovered
+                        ? 'scale-125 ring-2 ring-rose-400/50'
+                        : isLive
+                        ? 'ring-4 ring-rose-500/30 shadow-[0_0_8px_rgba(244,63,94,0.7)]'
+                        : 'opacity-80'
                     }`}
                     style={{ bottom: `${100 - getY(t.expense)}%`, transform: 'translateY(50%)' }}
                   />
                 )}
 
-                {/* Month label at bottom */}
+                {/* Period label at bottom */}
                 <span
                   className={`text-xs mt-auto pt-2 font-semibold transition-colors tabular-nums ${
                     isLive
@@ -217,19 +301,19 @@ export default function CashflowChart({
           })}
         </div>
 
-        {/* Floating Tooltip when hovering over a month */}
+        {/* Floating Tooltip when hovering over a period */}
         {hoveredData && (
           <div
             className={`absolute top-0 z-30 pointer-events-none bg-slate-950/90 dark:bg-slate-900/95 backdrop-blur-md text-white text-xs p-3 rounded-xl shadow-xl border border-slate-700/80 min-w-[160px] transition-all duration-150 ${
               hoveredIdx <= 1
                 ? 'left-4'
-                : hoveredIdx >= numMonths - 2
+                : hoveredIdx >= numItems - 2
                 ? 'right-4'
                 : 'left-1/2 -translate-x-1/2'
             }`}
           >
             <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-slate-700 font-bold">
-              <span>{hoveredData.month}</span>
+              <span>{hoveredData.rangeLabel || hoveredData.month}</span>
               {hoveredData.isLive && (
                 <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-blue-500/30 text-blue-300">
                   Current
@@ -249,10 +333,12 @@ export default function CashflowChart({
                 <span>Net Saved:</span>
                 <span className="font-bold">{formatMoney(hoveredData.saved)}</span>
               </div>
-              <div className="flex justify-between text-slate-400 text-[11px] pt-1">
-                <span>End Balance:</span>
-                <span>{formatMoney(hoveredData.closingBalance)}</span>
-              </div>
+              {hoveredData.closingBalance !== undefined && (
+                <div className="flex justify-between text-slate-400 text-[11px] pt-1">
+                  <span>End Balance:</span>
+                  <span>{formatMoney(hoveredData.closingBalance)}</span>
+                </div>
+              )}
             </div>
           </div>
         )}

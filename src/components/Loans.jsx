@@ -141,7 +141,7 @@ export default function Loans({
         {/* To Receive Card */}
         <div
           onClick={() => setLoanFilter('lent')}
-          className={`bg-white dark:bg-slate-900 dk-bg-slate-800 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 dk-border-slate-700 shadow-xs flex items-center justify-between cursor-pointer group transition-all ${
+          className={`card-lift bg-white dark:bg-slate-900 dk-bg-slate-800 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 dk-border-slate-700 shadow-xs flex items-center justify-between cursor-pointer group transition-all ${
             loanFilter === 'lent' ? 'ring-1 ring-blue-500/30' : ''
           }`}
         >
@@ -164,7 +164,7 @@ export default function Loans({
         {/* To Pay Card */}
         <div
           onClick={() => setLoanFilter('borrowed')}
-          className={`bg-white dark:bg-slate-900 dk-bg-slate-800 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 dk-border-slate-700 shadow-xs flex items-center justify-between cursor-pointer group transition-all ${
+          className={`card-lift bg-white dark:bg-slate-900 dk-bg-slate-800 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 dk-border-slate-700 shadow-xs flex items-center justify-between cursor-pointer group transition-all ${
             loanFilter === 'borrowed' ? 'ring-1 ring-blue-500/30' : ''
           }`}
         >
@@ -189,7 +189,7 @@ export default function Loans({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Log New Loan Form Card */}
         <div className="lg:col-span-5 xl:col-span-5 space-y-4">
-          <div className="bg-white dark:bg-slate-900 dk-bg-slate-800 rounded-2xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 dk-border-slate-700 shadow-xs">
+          <div className="card-lift bg-white dark:bg-slate-900 dk-bg-slate-800 rounded-2xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 dk-border-slate-700 shadow-xs">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-900/40">
                 <Landmark className="w-4 h-4" />
@@ -418,7 +418,7 @@ export default function Loans({
             return (
               <div
                 key={loan.id}
-                className="bg-white dark:bg-slate-900 dk-bg-slate-800 rounded-2xl p-5 border border-slate-200/90 dark:border-slate-800 dk-border-slate-700 shadow-xs relative space-y-4 hover:border-slate-300 dark:hover:border-slate-700 transition-colors"
+                className="card-lift bg-white dark:bg-slate-900 dk-bg-slate-800 rounded-2xl p-5 border border-slate-200/90 dark:border-slate-800 dk-border-slate-700 shadow-xs relative space-y-4 hover:border-slate-300 dark:hover:border-slate-700 transition-colors"
               >
                 {/* Top Section: Badge, Person, Date, Amount & Actions */}
                 <div className="flex justify-between items-start gap-3">
@@ -483,7 +483,7 @@ export default function Loans({
                   {/* Progress bar */}
                   <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all duration-300 ${
+                      className={`h-full rounded-full progress-smooth ${
                         isSettled ? 'bg-emerald-500' : 'bg-blue-600 dark:bg-blue-500'
                       }`}
                       style={{ width: `${progressPercent}%` }}

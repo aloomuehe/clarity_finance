@@ -48,6 +48,7 @@ export default function Dashboard({
   expenseCategories,
   incomeSources,
   sixMonthTrend,
+  transactions = [],
   formatCompactMoney = (val) => String(val),
 }) {
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false);
@@ -170,7 +171,7 @@ export default function Dashboard({
       {/* 2. Four Primary Financial Metrics Cards (Fazztrack Reference Style) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in-up">
         {/* Card 1: Total Balance */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between transition-all hover:border-slate-300 dark:hover:border-slate-700">
+        <div className="card-lift bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between transition-all hover:border-slate-300 dark:hover:border-slate-700">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
@@ -198,7 +199,7 @@ export default function Dashboard({
         </div>
 
         {/* Card 2: Monthly Income */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between transition-all hover:border-slate-300 dark:hover:border-slate-700">
+        <div className="card-lift bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between transition-all hover:border-slate-300 dark:hover:border-slate-700">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
@@ -230,7 +231,7 @@ export default function Dashboard({
         </div>
 
         {/* Card 3: Monthly Expense */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between transition-all hover:border-slate-300 dark:hover:border-slate-700">
+        <div className="card-lift bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between transition-all hover:border-slate-300 dark:hover:border-slate-700">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
@@ -262,7 +263,7 @@ export default function Dashboard({
         </div>
 
         {/* Card 4: Monthly Savings */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between transition-all hover:border-slate-300 dark:hover:border-slate-700">
+        <div className="card-lift bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between transition-all hover:border-slate-300 dark:hover:border-slate-700">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
@@ -359,6 +360,8 @@ export default function Dashboard({
         <div className="lg:col-span-8 flex flex-col">
           <CashflowChart
             sixMonthTrend={sixMonthTrend}
+            transactions={transactions.length > 0 ? transactions : monthTransactions}
+            selectedMonth={selectedMonth}
             formatMoney={formatMoney}
             formatCompactMoney={formatCompactMoney}
             onOpenModal={() => setIsTrendOpen(true)}
@@ -366,7 +369,7 @@ export default function Dashboard({
         </div>
 
         {/* Right: Asset Allocations / Spending Breakdown matching Reference */}
-        <div className="lg:col-span-4 bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+        <div className="card-lift lg:col-span-4 bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -394,7 +397,7 @@ export default function Dashboard({
                 topCategories.map((cat) => (
                   <div
                     key={cat.id}
-                    className={`h-full rounded-sm ${cat.color || 'bg-blue-500'}`}
+                    className={`h-full rounded-sm progress-smooth ${cat.color || 'bg-blue-500'}`}
                     style={{ width: `${Math.max(cat.percentage, 4)}%` }}
                     title={`${cat.label}: ${cat.percentage}%`}
                   />
@@ -466,7 +469,7 @@ export default function Dashboard({
       </div>
 
       {/* 5. Simplified Recent Transactions Section */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col">
+      <div className="card-lift bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col">
         {/* Section Header */}
         <div className="flex items-center justify-between gap-3 mb-4">
           <div>

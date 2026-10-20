@@ -253,6 +253,14 @@ export default function App() {
   const [heatmapValidationError, setHeatmapValidationError] = useState('');
 
   useEffect(() => {
+    document.documentElement.classList.remove('theme-terminal', 'theme-cupertino', 'ui-minimal', 'theme-classic', 'ui-classic');
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.removeItem('clarity_theme_style');
+      window.localStorage.removeItem('ui_mode');
+    }
+  }, []);
+
+  useEffect(() => {
     applyTheme(isDarkMode);
     localStorage.setItem('clarity_theme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
@@ -1588,6 +1596,7 @@ export default function App() {
                 expenseCategories={EXPENSE_CATEGORIES}
                 incomeSources={INCOME_SOURCES}
                 sixMonthTrend={sixMonthTrend}
+                transactions={transactions}
                 formatCompactMoney={formatCompactMoney}
               />
             )}

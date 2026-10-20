@@ -115,6 +115,105 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 html.dark ::-webkit-scrollbar-thumb { background: #475569; }
 html.dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
+/* ============================================================
+   INTERACTIVE ANIMATIONS & MICRO-INTERACTIONS (Global)
+   ============================================================ */
+
+/* Micro-feedback on buttons & interactive clicks */
+button:not(:disabled),
+.interactive-click {
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.15s ease,
+              border-color 0.15s ease,
+              opacity 0.15s ease;
+}
+button:not(:disabled):active,
+.interactive-click:active {
+  transform: scale(0.97);
+}
+
+/* Card hover lift & ambient elevation */
+.card-lift,
+.dark-card {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s ease;
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+}
+html.dark .card-lift:hover {
+  box-shadow: 0 12px 30px -5px rgba(0, 0, 0, 0.5), 0 0 20px -2px rgba(59, 130, 246, 0.1);
+}
+
+/* Smooth Progress Bar Transitions */
+.progress-smooth {
+  transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease;
+}
+
+/* Modal Spring & Scale-in */
+@keyframes modalSpringIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.modal-spring,
+.animate-modal-in {
+  animation: modalSpringIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Toast Spring-Up */
+@keyframes toastSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.toast-spring {
+  animation: toastSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Smooth Chart Draw Transition */
+@keyframes chartLineDraw {
+  from {
+    stroke-dashoffset: 1500;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.chart-draw {
+  stroke-dasharray: 1500;
+  animation: chartLineDraw 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Page Cross-fade */
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-page-enter {
+  animation: pageFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+
 /* Screen mode: hide dedicated print document */
 .print-document {
   display: none;

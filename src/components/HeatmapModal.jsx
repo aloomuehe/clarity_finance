@@ -25,7 +25,7 @@ export default function HeatmapModal({
       aria-modal="true"
       aria-labelledby="heatmap-modal-title"
     >
-      <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl w-full max-w-md sm:max-w-lg shadow-2xl border border-slate-200/90 dark:border-slate-800 animate-fade-in-up my-auto max-h-[92vh] flex flex-col overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl w-full max-w-md sm:max-w-lg shadow-2xl border border-slate-200/90 dark:border-slate-800 modal-spring my-auto max-h-[92vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="px-4 py-3.5 sm:px-5 sm:py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">

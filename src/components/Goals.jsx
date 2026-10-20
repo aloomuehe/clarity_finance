@@ -313,7 +313,7 @@ export default function Goals({
       {/* 2. Top Summary Cards: Total Saved, Total Target, Overall Progress */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
         {/* Total Saved Card */}
-        <div className="bg-white dark:bg-slate-900 dk-bg-slate-800 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 dk-border-slate-700 shadow-xs flex items-center justify-between transition-all">
+        <div className="card-lift bg-white dark:bg-slate-900 dk-bg-slate-800 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 dk-border-slate-700 shadow-xs flex items-center justify-between transition-all">
           <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
             <div className="w-11 h-11 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-900/40">
               <Target className="w-5 h-5" />
@@ -333,7 +333,7 @@ export default function Goals({
         </div>
 
         {/* Total Target Card */}
-        <div className="bg-white dark:bg-slate-900 dk-bg-slate-800 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 dk-border-slate-700 shadow-xs flex items-center justify-between transition-all">
+        <div className="card-lift bg-white dark:bg-slate-900 dk-bg-slate-800 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 dk-border-slate-700 shadow-xs flex items-center justify-between transition-all">
           <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
             <div className="w-11 h-11 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 border border-purple-100 dark:border-purple-900/40">
               <BarChart3 className="w-5 h-5" />
@@ -353,7 +353,7 @@ export default function Goals({
         </div>
 
         {/* Overall Progress Card */}
-        <div className="bg-white dark:bg-slate-900 dk-bg-slate-800 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 dk-border-slate-700 shadow-xs flex items-center justify-between transition-all">
+        <div className="card-lift bg-white dark:bg-slate-900 dk-bg-slate-800 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 dk-border-slate-700 shadow-xs flex items-center justify-between transition-all">
           <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
             <div className="w-11 h-11 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-900/40">
               <CircleDot className="w-5 h-5" />
@@ -377,7 +377,7 @@ export default function Goals({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Add New Goal Form */}
         <div className="lg:col-span-5 xl:col-span-5 space-y-4">
-          <div className="bg-white dark:bg-slate-900 dk-bg-slate-800 rounded-2xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 dk-border-slate-700 shadow-xs">
+          <div className="card-lift bg-white dark:bg-slate-900 dk-bg-slate-800 rounded-2xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 dk-border-slate-700 shadow-xs">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-900/40">
                 <PlusCircle className="w-4 h-4" />
@@ -596,7 +596,7 @@ export default function Goals({
             return (
               <div
                 key={g.id}
-                className="bg-white dark:bg-slate-900 dk-bg-slate-800 rounded-2xl p-5 border border-slate-200/90 dark:border-slate-800 dk-border-slate-700 shadow-xs relative space-y-4 hover:border-slate-300 dark:hover:border-slate-700 transition-colors"
+                className="card-lift bg-white dark:bg-slate-900 dk-bg-slate-800 rounded-2xl p-5 border border-slate-200/90 dark:border-slate-800 dk-border-slate-700 shadow-xs relative space-y-4 hover:border-slate-300 dark:hover:border-slate-700 transition-colors"
               >
                 {/* Top Section: Icon, Title, Target Subtitle, Percentage Badge & 3-Dots Menu */}
                 <div className="flex items-start justify-between gap-3">
@@ -674,7 +674,7 @@ export default function Goals({
                 {/* Progress Bar */}
                 <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${
+                    className={`h-full rounded-full progress-smooth ${
                       isDone ? 'bg-emerald-500' : 'bg-blue-600'
                     }`}
                     style={{ width: `${pct}%` }}

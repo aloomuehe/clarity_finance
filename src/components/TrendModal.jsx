@@ -5,7 +5,7 @@ export default function TrendModal({ open, onClose, sixMonthTrend, formatMoney, 
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="dark-card bg-white dk-bg-slate-900 rounded-3xl w-full max-w-4xl p-8 relative shadow-2xl animate-fade-in-up border border-slate-200 dk-border-slate-800">
+      <div className="dark-card bg-white dk-bg-slate-900 rounded-3xl w-full max-w-4xl p-8 relative shadow-2xl modal-spring border border-slate-200 dk-border-slate-800">
         <button onClick={onClose} className="absolute top-6 right-6 p-2 bg-slate-100 dk-bg-slate-800 rounded-full hover:bg-slate-200 dk-hover-bg-slate-700 text-slate-700 dk-text-slate-200 transition-colors"><X className="w-5 h-5" /></button>
         <h2 className="text-2xl font-bold mb-2 flex items-center gap-3 text-slate-900 dk-text-white"><BarChart className="w-7 h-7 text-emerald-500" /> 6-Month Trajectory</h2>
         <p className="text-slate-500 dk-text-slate-400 mb-12 font-medium">Compare your cash flow over the previous half-year. The current month updates live, and hovering shows the balance carried over from the month before.</p>
@@ -16,7 +16,7 @@ export default function TrendModal({ open, onClose, sixMonthTrend, formatMoney, 
             <div className="relative h-52">
               {[25, 50, 75, 100].map(pct => <div key={pct} className="absolute left-0 right-0 border-t border-dashed border-slate-200 dk-border-slate-700" style={{ bottom: `${pct}%` }}></div>)}
               <div className="absolute left-0 right-0 bottom-0 border-t-2 border-slate-300 dk-border-slate-600"></div>
-              <svg className="absolute inset-0 w-full h-full pointer-events-none z-20 overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none"><polyline points={sixMonthTrend.incomeLine} fill="none" stroke="#10b981" strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" /><polyline points={sixMonthTrend.expenseLine} fill="none" stroke="#f43f5e" strokeWidth="2.5" strokeDasharray="6 4" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              <svg className="absolute inset-0 w-full h-full pointer-events-none z-20 overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none"><polyline points={sixMonthTrend.incomeLine} fill="none" stroke="#10b981" strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" className="chart-draw" /><polyline points={sixMonthTrend.expenseLine} fill="none" stroke="#f43f5e" strokeWidth="2.5" strokeDasharray="6 4" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" className="chart-draw" /></svg>
               <div className="absolute inset-0 flex items-end justify-between">
                 {sixMonthTrend.trend.map((t, i) => {
                   const lastIdx = sixMonthTrend.trend.length - 1;

@@ -151,6 +151,81 @@ export const calculateSixMonthTrend = (monthlyData, selectedMonth) => {
   return { trend, maxVal, incomeLine: toPoints('income'), expenseLine: toPoints('expense'), axisTicks: [1, 0.75, 0.5, 0.25, 0].map(f => maxVal * f) };
 };
 
+export const calculateDailyTrend = (transactions, baseDate = getTodayStr(), daysCount = 7) => {
+  const liveDate = getTodayStr();
+  const sortedTxs = [...(transactions || [])].filter(t => t && t.date);
+  const closingBalanceAtDate = (dateStr) => {
+    return sortedTxs
+      .filter(t => t.date <= dateStr)
+      .reduce((sum, t) => sum + (t.type === 'income' ? (Number(t.amount) || 0) : -(Number(t.amount) || 0)), 0);
+  };
+
+  const trend = [];
+  for (let i = daysCount - 1; i >= 0; i--) {
+    const dateStr = shiftDate(baseDate, -i);
+    const dayTxs = sortedTxs.filter(t => t.date === dateStr);
+    const income = dayTxs.filter(t => t.type === 'income').reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+    const expense = dayTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+    const parts = dateStr.split('-');
+    const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    const label = d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+    const closing = closingBalanceAtDate(dateStr);
+
+    trend.push({
+      month: label,
+      key: dateStr,
+      income,
+      expense,
+      saved: income - expense,
+      openingBalance: closing - (income - expense),
+      closingBalance: closing,
+      isLive: dateStr === liveDate,
+    });
+  }
+  const maxVal = Math.max(...trend.flatMap(t => [t.income, t.expense]), 1);
+  return { trend, maxVal, axisTicks: [1, 0.75, 0.5, 0.25, 0].map(f => maxVal * f) };
+};
+
+export const calculateWeeklyTrend = (transactions, baseDate = getTodayStr(), weeksCount = 6) => {
+  const liveDate = getTodayStr();
+  const sortedTxs = [...(transactions || [])].filter(t => t && t.date);
+  const closingBalanceAtDate = (dateStr) => {
+    return sortedTxs
+      .filter(t => t.date <= dateStr)
+      .reduce((sum, t) => sum + (t.type === 'income' ? (Number(t.amount) || 0) : -(Number(t.amount) || 0)), 0);
+  };
+
+  const trend = [];
+  for (let i = weeksCount - 1; i >= 0; i--) {
+    const endDaysAgo = i * 7;
+    const weekEndDate = shiftDate(baseDate, -endDaysAgo);
+    const weekStartDate = shiftDate(weekEndDate, -6);
+
+    const weekTxs = sortedTxs.filter(t => t.date >= weekStartDate && t.date <= weekEndDate);
+    const income = weekTxs.filter(t => t.type === 'income').reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+    const expense = weekTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+
+    const parts = weekStartDate.split('-');
+    const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    const label = d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+    const closing = closingBalanceAtDate(weekEndDate);
+
+    trend.push({
+      month: label,
+      key: `${weekStartDate}_${weekEndDate}`,
+      rangeLabel: `${weekStartDate} - ${weekEndDate}`,
+      income,
+      expense,
+      saved: income - expense,
+      openingBalance: closing - (income - expense),
+      closingBalance: closing,
+      isLive: liveDate >= weekStartDate && liveDate <= weekEndDate,
+    });
+  }
+  const maxVal = Math.max(...trend.flatMap(t => [t.income, t.expense]), 1);
+  return { trend, maxVal, axisTicks: [1, 0.75, 0.5, 0.25, 0].map(f => maxVal * f) };
+};
+
 export const calculateFinancialHealth = (currentMonthData, monthlyTarget, recurring, loans, goals) => {
   let score = 0;
   const breakdown = [];

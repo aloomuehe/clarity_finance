@@ -98,7 +98,7 @@ export default function TransactionsPage({
       {/* 2. Top 3 Summary Cards (CashSync Reference Style) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Card 1: Net Change This Month */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center gap-4">
+        <div className="card-lift bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center gap-4">
           <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
             <ArrowRightLeft className="w-5 h-5" />
           </div>
@@ -117,7 +117,7 @@ export default function TransactionsPage({
         </div>
 
         {/* Card 2: Money In */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center gap-4">
+        <div className="card-lift bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center gap-4">
           <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
             <ArrowDownLeft className="w-5 h-5" />
           </div>
@@ -132,7 +132,7 @@ export default function TransactionsPage({
         </div>
 
         {/* Card 3: Money Out */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center gap-4">
+        <div className="card-lift bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center gap-4">
           <div className="w-10 h-10 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
             <ArrowUpRight className="w-5 h-5" />
           </div>
@@ -148,7 +148,7 @@ export default function TransactionsPage({
       </div>
 
       {/* 3. Action Toolbar: Magic Quick Add & Receipt Scanner */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-3 sm:p-4 border border-slate-200/90 dark:border-slate-800 shadow-xs">
+      <div className="card-lift bg-white dark:bg-slate-900 rounded-2xl p-3 sm:p-4 border border-slate-200/90 dark:border-slate-800 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           {/* Magic Add Input & Primary Action */}
           <div className="flex-1 flex flex-wrap sm:flex-nowrap items-center gap-2 min-w-0">

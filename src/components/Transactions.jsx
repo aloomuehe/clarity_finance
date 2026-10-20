@@ -197,7 +197,7 @@ export default function Transactions({
   }, [displayTransactions, filter, appliedFilters, sortBy]);
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col relative">
+    <div className="card-lift bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col relative">
       {/* 1. Header / Summary Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <div>

@@ -202,7 +202,7 @@ export default function Forecast({
       {/* 2. Key Projections Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
         {/* Card 1: Projected End-of-Month Balance */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+        <div className="card-lift bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
               <span className="flex items-center gap-1.5">
@@ -229,7 +229,7 @@ export default function Forecast({
         </div>
 
         {/* Card 2: Projected Monthly Savings */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+        <div className="card-lift bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
               <span className="flex items-center gap-1.5">
@@ -257,7 +257,7 @@ export default function Forecast({
         </div>
 
         {/* Card 3: Upcoming Commitments Breakdown */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex flex-col justify-between md:col-span-2 lg:col-span-1">
+        <div className="card-lift bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex flex-col justify-between md:col-span-2 lg:col-span-1">
           <div>
             <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
               <span className="flex items-center gap-1.5">
@@ -288,7 +288,7 @@ export default function Forecast({
         {/* ======================================================== */}
         {/* LEFT COLUMN: RECURRING PAYMENTS                          */}
         {/* ======================================================== */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
+        <div className="card-lift bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
           {/* Header & Quick Action */}
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -630,7 +630,7 @@ export default function Forecast({
         {/* ======================================================== */}
         {/* RIGHT COLUMN: PLANNED FUTURE EXPENSES                    */}
         {/* ======================================================== */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
+        <div className="card-lift bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
           {/* Header & Quick Action */}
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
