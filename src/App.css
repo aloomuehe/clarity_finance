@@ -1,31 +1,44 @@
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(15px); }
-  to { opacity: 1; transform: translateY(0); }
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.995);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
 }
 .animate-fade-in-up {
-  animation: fadeInUp 0.5s ease-out forwards;
+  animation: fadeInUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
 }
-.stagger-1 { animation-delay: 0.1s; }
-.stagger-2 { animation-delay: 0.2s; }
-.stagger-3 { animation-delay: 0.3s; }
+.stagger-1 { animation-delay: 0.04s; }
+.stagger-2 { animation-delay: 0.08s; }
+.stagger-3 { animation-delay: 0.12s; }
+.stagger-4 { animation-delay: 0.16s; }
 
 @keyframes incomeFloatUp {
-  0% { opacity: 0; transform: translate(-50%, 40px) scale(0.8); }
-  20% { opacity: 1; transform: translate(-50%, 0) scale(1.1); }
-  80% { opacity: 1; transform: translate(-50%, -20px) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -50px) scale(0.9); }
+  0% { opacity: 0; transform: translate3d(-50%, 35px, 0) scale(0.85); }
+  20% { opacity: 1; transform: translate3d(-50%, 0, 0) scale(1.08); }
+  80% { opacity: 1; transform: translate3d(-50%, -18px, 0) scale(1); }
+  100% { opacity: 0; transform: translate3d(-50%, -45px, 0) scale(0.92); }
 }
 @keyframes expenseDropDown {
-  0% { opacity: 0; transform: translate(-50%, -40px) scale(0.8); }
-  20% { opacity: 1; transform: translate(-50%, 0) scale(1.1); }
-  80% { opacity: 1; transform: translate(-50%, 20px) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, 50px) scale(0.9); }
+  0% { opacity: 0; transform: translate3d(-50%, -35px, 0) scale(0.85); }
+  20% { opacity: 1; transform: translate3d(-50%, 0, 0) scale(1.08); }
+  80% { opacity: 1; transform: translate3d(-50%, 18px, 0) scale(1); }
+  100% { opacity: 0; transform: translate3d(-50%, 45px, 0) scale(0.92); }
 }
-.anim-income { animation: incomeFloatUp 1.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-.anim-expense { animation: expenseDropDown 1.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+.anim-income { animation: incomeFloatUp 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.anim-expense { animation: expenseDropDown 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
 html { color-scheme: light; }
 html.dark { color-scheme: dark; }
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
+}
 body { background-color: #f8fafc; color: #0f172a; }
 html.dark body { background-color: #0f172a; color: #f1f5f9; }
 
@@ -116,36 +129,73 @@ html.dark ::-webkit-scrollbar-thumb { background: #475569; }
 html.dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
 /* ============================================================
-   INTERACTIVE ANIMATIONS & MICRO-INTERACTIONS (Global)
+   INTERACTIVE ANIMATIONS & MICRO-INTERACTIONS (Global 60fps)
    ============================================================ */
 
 /* Micro-feedback on buttons & interactive clicks */
 button:not(:disabled),
 .interactive-click {
-  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-              background-color 0.15s ease,
-              border-color 0.15s ease,
-              opacity 0.15s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition: transform 0.16s cubic-bezier(0.2, 0.9, 0.3, 1),
+              box-shadow 0.22s cubic-bezier(0.2, 0.9, 0.3, 1),
+              background-color 0.18s ease,
+              border-color 0.18s ease,
+              color 0.18s ease,
+              filter 0.15s ease;
 }
+
+button:not(:disabled):hover,
+.interactive-click:hover {
+  transform: translate3d(0, -1px, 0);
+}
+
 button:not(:disabled):active,
 .interactive-click:active {
-  transform: scale(0.97);
+  transform: translate3d(0, 0, 0) scale(0.955);
+  filter: brightness(0.93);
+}
+
+html.dark button:not(:disabled):active,
+html.dark .interactive-click:active {
+  filter: brightness(1.14);
+}
+
+/* Primary CTA elevation on hover & compression on click */
+button[class*="bg-blue-600"]:hover,
+button[class*="bg-slate-900"]:hover {
+  box-shadow: 0 4px 16px -2px rgba(37, 99, 235, 0.38), 0 2px 6px -1px rgba(0, 0, 0, 0.08);
+}
+button[class*="bg-blue-600"]:active,
+button[class*="bg-slate-900"]:active {
+  transform: translate3d(0, 0, 0) scale(0.96);
+  box-shadow: 0 2px 6px -1px rgba(37, 99, 235, 0.25);
 }
 
 /* Card hover lift & ambient elevation */
 .card-lift,
 .dark-card {
+  will-change: transform, box-shadow;
+  transform: translate3d(0, 0, 0);
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
               box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.2s ease;
+              border-color 0.2s ease,
+              background-color 0.2s ease;
 }
 .card-lift:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+  transform: translate3d(0, -3px, 0);
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.06), 0 4px 12px -3px rgba(0, 0, 0, 0.03);
 }
 html.dark .card-lift:hover {
-  box-shadow: 0 12px 30px -5px rgba(0, 0, 0, 0.5), 0 0 20px -2px rgba(59, 130, 246, 0.1);
+  transform: translate3d(0, -3px, 0);
+  box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.55), 0 0 20px -2px rgba(59, 130, 246, 0.1);
+}
+
+.card-lift.cursor-pointer:active {
+  transform: translate3d(0, -1px, 0) scale(0.99);
+  transition-duration: 0.1s;
 }
 
 /* Smooth Progress Bar Transitions */
@@ -153,35 +203,74 @@ html.dark .card-lift:hover {
   transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease;
 }
 
+/* Safe area padding for mobile navigation */
+.safe-bottom {
+  padding-bottom: max(0.6rem, env(safe-area-inset-bottom));
+}
+
 /* Modal Spring & Scale-in */
 @keyframes modalSpringIn {
   0% {
     opacity: 0;
-    transform: scale(0.96) translateY(8px);
+    transform: translate3d(0, 16px, 0) scale(0.95);
   }
   100% {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 .modal-spring,
 .animate-modal-in {
-  animation: modalSpringIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: modalSpringIn 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* Popover & Dropdown Spring-In */
+@keyframes popoverSpringIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -6px, 0) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+.animate-popover-in {
+  animation: popoverSpringIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+  transform-origin: top;
+}
+
+/* Mobile Drawer Slide-In */
+@keyframes drawerSlideIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(100%, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+.animate-drawer-in {
+  animation: drawerSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
 }
 
 /* Toast Spring-Up */
 @keyframes toastSlideUp {
   0% {
     opacity: 0;
-    transform: translateY(20px) scale(0.95);
+    transform: translate3d(0, 20px, 0) scale(0.95);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 .toast-spring {
-  animation: toastSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: toastSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Smooth Chart Draw Transition */
@@ -195,22 +284,36 @@ html.dark .card-lift:hover {
 }
 .chart-draw {
   stroke-dasharray: 1500;
-  animation: chartLineDraw 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: chartLineDraw 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Page Cross-fade */
 @keyframes pageFadeIn {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translate3d(0, 6px, 0);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 .animate-page-enter {
-  animation: pageFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: pageFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Input & Select Smooth Focus */
+input, select, textarea {
+  transition: border-color 0.2s ease,
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.2s ease,
+              color 0.15s ease;
+}
+
+/* Transaction List Item Transitions */
+tr.group,
+div[class*="divide-y"] > div {
+  transition: background-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 

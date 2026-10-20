@@ -102,13 +102,13 @@ export default function Dashboard({
         </div>
 
         {/* Header Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Health Score Pill */}
           <div className="relative group">
             <button
               type="button"
               onClick={() => setShowScoreBreakdown(!showScoreBreakdown)}
-              className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors ${healthRatingBadge}`}
+              className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${healthRatingBadge}`}
               title="View financial health score"
             >
               <Activity className="w-3.5 h-3.5" />
@@ -118,10 +118,10 @@ export default function Dashboard({
 
             {/* Health Score Popover */}
             <div
-              className={`absolute right-0 top-full mt-2 w-64 p-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white text-xs rounded-xl shadow-xl z-50 transition-all ${
+              className={`absolute right-0 top-full mt-2 w-64 max-w-[calc(100vw-2rem)] p-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white text-xs rounded-xl shadow-xl z-50 transition-all duration-200 origin-top-right transform ${
                 showScoreBreakdown
-                  ? 'opacity-100 pointer-events-auto'
-                  : 'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto'
+                  ? 'opacity-100 scale-100 pointer-events-auto'
+                  : 'opacity-0 scale-95 pointer-events-none group-hover:opacity-100 group-hover:scale-100 group-hover:pointer-events-auto'
               }`}
             >
               <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-slate-100 dark:border-slate-800 font-bold">
@@ -184,7 +184,7 @@ export default function Dashboard({
             <span className="text-slate-300 dark:text-slate-600 text-xs font-bold">···</span>
           </div>
           <div>
-            <p className="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900 dark:text-white tabular-nums my-1">
+            <p className="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900 dark:text-white tabular-nums my-1 truncate">
               {formatMoney(balance)}
             </p>
             <div className="flex items-center justify-between text-[11px] font-medium text-slate-500 dark:text-slate-400 pt-1">
@@ -212,11 +212,11 @@ export default function Dashboard({
             <span className="text-slate-300 dark:text-slate-600 text-xs font-bold">···</span>
           </div>
           <div>
-            <p className="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900 dark:text-white tabular-nums my-1">
+            <p className="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900 dark:text-white tabular-nums my-1 truncate">
               {formatMoney(currentMonthData.income)}
             </p>
             <div className="flex items-center justify-between text-[11px] font-medium pt-1">
-              <span className={`font-semibold tabular-nums ${
+              <span className={`font-semibold tabular-nums truncate ${
                 incomeDiff > 0 || isNewIncome
                   ? 'text-emerald-600 dark:text-emerald-400'
                   : incomeDiff < 0
@@ -244,11 +244,11 @@ export default function Dashboard({
             <span className="text-slate-300 dark:text-slate-600 text-xs font-bold">···</span>
           </div>
           <div>
-            <p className="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900 dark:text-white tabular-nums my-1">
+            <p className="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900 dark:text-white tabular-nums my-1 truncate">
               {formatMoney(currentMonthData.expense)}
             </p>
             <div className="flex items-center justify-between text-[11px] font-medium pt-1">
-              <span className={`font-semibold tabular-nums ${
+              <span className={`font-semibold tabular-nums truncate ${
                 expenseDiff > 0
                   ? 'text-rose-600 dark:text-rose-400'
                   : expenseDiff < 0
@@ -276,7 +276,7 @@ export default function Dashboard({
             <span className="text-slate-300 dark:text-slate-600 text-xs font-bold">···</span>
           </div>
           <div>
-            <p className={`text-2xl sm:text-[26px] font-bold tracking-tight tabular-nums my-1 ${
+            <p className={`text-2xl sm:text-[26px] font-bold tracking-tight tabular-nums my-1 truncate ${
               currentMonthData.savings >= 0
                 ? 'text-slate-900 dark:text-white'
                 : 'text-rose-600 dark:text-rose-400'

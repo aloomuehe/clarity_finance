@@ -224,8 +224,8 @@ function BulkAddModalContent({
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[80] flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-5xl my-auto shadow-2xl border border-slate-200/90 dark:border-slate-800 flex flex-col max-h-[92vh] modal-spring">
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-3">
+        <div className="p-3.5 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             {mode !== 'select' && (
               <button
                 type="button"
@@ -236,25 +236,25 @@ function BulkAddModalContent({
                     setMode('select');
                   }
                 }}
-                className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer shrink-0"
                 title="Go Back"
               >
                 <ArrowLeft className="w-4 h-4" />
               </button>
             )}
-            <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-900/40">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-900/40">
               <Layers className="w-4 h-4" />
             </div>
-            <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-                Bulk Add Transactions
+            <div className="min-w-0">
+              <h2 className="text-sm sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5 sm:gap-2 truncate">
+                <span>Bulk Add</span>
                 {mode === 'review' && (
-                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-900/40">
+                  <span className="text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-900/40 shrink-0">
                     Review ({rows.length})
                   </span>
                 )}
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate">
                 {mode === 'select' && 'Choose your preferred input method'}
                 {mode === 'scan' && 'Extract multiple transactions from screenshots using AI'}
                 {mode === 'manual' && 'Rapid spreadsheet table entry without AI'}
@@ -263,13 +263,13 @@ function BulkAddModalContent({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {mode === 'manual' && (
               <button
                 type="button"
                 onClick={() => setMode('review')}
                 disabled={rows.length === 0}
-                className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white transition-colors flex items-center gap-1.5 shadow-2xs disabled:opacity-50 cursor-pointer"
+                className="px-2.5 sm:px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white transition-colors flex items-center gap-1.5 shadow-2xs disabled:opacity-50 cursor-pointer"
               >
                 <span>Proceed to Review ({rows.length})</span>
               </button>

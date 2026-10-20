@@ -69,11 +69,11 @@ export default function TransactionsPage({
         </div>
 
         {/* Quick Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setShowManualForm(!showManualForm)}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-xl border transition-colors flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 text-xs font-semibold rounded-xl border transition-colors flex items-center gap-1.5 cursor-pointer ${
               showManualForm || editingId
                 ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/60'
                 : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200/90 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -87,7 +87,7 @@ export default function TransactionsPage({
           <button
             type="button"
             onClick={onBulkAdd}
-            className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 border border-transparent transition-colors flex items-center gap-1.5 shadow-2xs"
+            className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 border border-transparent transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
           >
             <Layers className="w-3.5 h-3.5" />
             <span>Bulk Add</span>
@@ -96,17 +96,17 @@ export default function TransactionsPage({
       </div>
 
       {/* 2. Top 3 Summary Cards (CashSync Reference Style) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         {/* Card 1: Net Change This Month */}
-        <div className="card-lift bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center gap-4">
+        <div className="card-lift bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center gap-3.5 sm:gap-4 min-w-0">
           <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
             <ArrowRightLeft className="w-5 h-5" />
           </div>
           <div className="min-w-0">
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block uppercase tracking-wider">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block uppercase tracking-wider truncate">
               Net Change This Month
             </span>
-            <p className={`text-xl sm:text-2xl font-bold tracking-tight tabular-nums mt-0.5 ${
+            <p className={`text-xl sm:text-2xl font-bold tracking-tight tabular-nums mt-0.5 truncate ${
               currentMonthData.savings >= 0
                 ? 'text-slate-900 dark:text-white'
                 : 'text-rose-600 dark:text-rose-400'
@@ -117,30 +117,30 @@ export default function TransactionsPage({
         </div>
 
         {/* Card 2: Money In */}
-        <div className="card-lift bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center gap-4">
+        <div className="card-lift bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center gap-3.5 sm:gap-4 min-w-0">
           <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
             <ArrowDownLeft className="w-5 h-5" />
           </div>
           <div className="min-w-0">
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block uppercase tracking-wider">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block uppercase tracking-wider truncate">
               Money In (Income)
             </span>
-            <p className="text-xl sm:text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5">
+            <p className="text-xl sm:text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5 truncate">
               +{formatMoney(currentMonthData.income)}
             </p>
           </div>
         </div>
 
         {/* Card 3: Money Out */}
-        <div className="card-lift bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center gap-4">
+        <div className="card-lift bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center gap-3.5 sm:gap-4 min-w-0">
           <div className="w-10 h-10 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
             <ArrowUpRight className="w-5 h-5" />
           </div>
           <div className="min-w-0">
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block uppercase tracking-wider">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block uppercase tracking-wider truncate">
               Money Out (Expenses)
             </span>
-            <p className="text-xl sm:text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400 tabular-nums mt-0.5">
+            <p className="text-xl sm:text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400 tabular-nums mt-0.5 truncate">
               -{formatMoney(currentMonthData.expense)}
             </p>
           </div>
@@ -152,7 +152,7 @@ export default function TransactionsPage({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           {/* Magic Add Input & Primary Action */}
           <div className="flex-1 flex flex-wrap sm:flex-nowrap items-center gap-2 min-w-0">
-            <div className="relative flex-1 min-w-[180px]">
+            <div className="relative flex-1 min-w-[140px] sm:min-w-[180px]">
               <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 dark:text-slate-500 pointer-events-none">
                 <Sparkles className="w-3.5 h-3.5" />
               </span>

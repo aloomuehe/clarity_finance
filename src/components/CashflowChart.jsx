@@ -73,9 +73,9 @@ export default function CashflowChart({
   const hoveredData = hoveredIdx !== null ? trend[hoveredIdx] : null;
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between relative card-lift">
+    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between relative card-lift">
       {/* Header Row: Title & Subtitle on left, Timeframe Switcher & Series Filter on right */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div>
           <div className="flex items-center gap-2">
             <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
@@ -98,9 +98,9 @@ export default function CashflowChart({
         </div>
 
         {/* Controls Container */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 max-w-full">
           {/* Timeframe Switcher: Daily | Weekly | Monthly matching reference design */}
-          <div className="inline-flex items-center bg-slate-100 dark:bg-slate-950 p-1 rounded-full border border-slate-200/90 dark:border-slate-800 text-xs font-semibold shadow-inner">
+          <div className="inline-flex items-center bg-slate-100 dark:bg-slate-950 p-0.5 sm:p-1 rounded-full border border-slate-200/90 dark:border-slate-800 text-[11px] sm:text-xs font-semibold shadow-inner">
             {[
               { id: 'daily', label: 'Daily' },
               { id: 'weekly', label: 'Weekly' },
@@ -110,7 +110,7 @@ export default function CashflowChart({
                 key={tf.id}
                 type="button"
                 onClick={() => setTimeframe(tf.id)}
-                className={`px-3 sm:px-3.5 py-1 rounded-full transition-all cursor-pointer ${
+                className={`px-2.5 sm:px-3.5 py-1 rounded-full transition-all cursor-pointer ${
                   timeframe === tf.id
                     ? 'bg-indigo-600 dark:bg-indigo-600 text-white font-bold shadow-2xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'
@@ -122,7 +122,7 @@ export default function CashflowChart({
           </div>
 
           {/* Series Filter Tabs: All | Income | Expense | Savings */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl text-xs font-semibold">
+          <div className="inline-flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl text-[11px] sm:text-xs font-semibold">
             {[
               { id: 'all', label: 'All' },
               { id: 'income', label: 'Income' },
@@ -133,7 +133,7 @@ export default function CashflowChart({
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveSeries(tab.id)}
-                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                className={`px-2 sm:px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
                   activeSeries === tab.id
                     ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-2xs font-bold'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -260,26 +260,38 @@ export default function CashflowChart({
                 {/* Point indicators on curves */}
                 {(activeSeries === 'all' || activeSeries === 'income') && (
                   <div
-                    className={`absolute w-2.5 h-2.5 rounded-full bg-blue-600 border-2 border-white dark:border-slate-900 transition-transform ${
+                    className={`absolute w-2.5 h-2.5 rounded-full bg-blue-600 border-2 border-white dark:border-slate-900 translate-y-1/2 transition-all duration-200 ${
                       isHovered
-                        ? 'scale-125 ring-2 ring-blue-400/50'
+                        ? 'scale-150 ring-4 ring-blue-400/50 z-30'
                         : isLive
                         ? 'ring-4 ring-blue-500/30 shadow-[0_0_8px_rgba(37,99,235,0.7)]'
                         : 'opacity-80'
                     }`}
-                    style={{ bottom: `${100 - getY(t.income)}%`, transform: 'translateY(50%)' }}
+                    style={{ bottom: `${100 - getY(t.income)}%` }}
                   />
                 )}
                 {(activeSeries === 'all' || activeSeries === 'expense') && (
                   <div
-                    className={`absolute w-2.5 h-2.5 rounded-full bg-rose-500 border-2 border-white dark:border-slate-900 transition-transform ${
+                    className={`absolute w-2.5 h-2.5 rounded-full bg-rose-500 border-2 border-white dark:border-slate-900 translate-y-1/2 transition-all duration-200 ${
                       isHovered
-                        ? 'scale-125 ring-2 ring-rose-400/50'
+                        ? 'scale-150 ring-4 ring-rose-400/50 z-30'
                         : isLive
                         ? 'ring-4 ring-rose-500/30 shadow-[0_0_8px_rgba(244,63,94,0.7)]'
                         : 'opacity-80'
                     }`}
-                    style={{ bottom: `${100 - getY(t.expense)}%`, transform: 'translateY(50%)' }}
+                    style={{ bottom: `${100 - getY(t.expense)}%` }}
+                  />
+                )}
+                {(activeSeries === 'all' || activeSeries === 'savings') && (
+                  <div
+                    className={`absolute w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 translate-y-1/2 transition-all duration-200 ${
+                      isHovered
+                        ? 'scale-150 ring-4 ring-emerald-400/50 z-30'
+                        : isLive
+                        ? 'ring-4 ring-emerald-500/30 shadow-[0_0_8px_rgba(16,185,129,0.7)]'
+                        : 'opacity-80'
+                    }`}
+                    style={{ bottom: `${100 - getY(Math.max(0, t.saved))}%` }}
                   />
                 )}
 
@@ -304,7 +316,7 @@ export default function CashflowChart({
         {/* Floating Tooltip when hovering over a period */}
         {hoveredData && (
           <div
-            className={`absolute top-0 z-30 pointer-events-none bg-slate-950/90 dark:bg-slate-900/95 backdrop-blur-md text-white text-xs p-3 rounded-xl shadow-xl border border-slate-700/80 min-w-[160px] transition-all duration-150 ${
+            className={`absolute top-0 z-30 pointer-events-none bg-slate-950/90 dark:bg-slate-900/95 backdrop-blur-md text-white text-xs p-3 rounded-xl shadow-xl border border-slate-700/80 min-w-[160px] animate-popover-in ${
               hoveredIdx <= 1
                 ? 'left-4'
                 : hoveredIdx >= numItems - 2
@@ -345,8 +357,8 @@ export default function CashflowChart({
       </div>
 
       {/* Chart Legend */}
-      <div className="flex items-center justify-between pt-3 mt-2 border-t border-slate-100 dark:border-slate-800/80 text-xs">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-3 mt-2 border-t border-slate-100 dark:border-slate-800/80 text-xs">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
           <span className="flex items-center gap-1.5 font-semibold text-slate-600 dark:text-slate-400">
             <span className="w-2.5 h-2.5 rounded-full bg-blue-600" /> Income
           </span>

@@ -313,7 +313,7 @@ export default function Transactions({
             {showFilterPopover && (
               <div
                 ref={filterPopoverRef}
-                className="absolute left-0 sm:left-auto sm:right-auto top-full mt-2 z-50 w-[340px] sm:w-[420px] bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-fade-in-up"
+                className="fixed inset-x-3 top-24 sm:absolute sm:inset-auto sm:left-0 sm:top-full sm:mt-2 z-50 w-[calc(100vw-1.5rem)] sm:w-[420px] max-w-[420px] bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-popover-in origin-top"
               >
                 {/* 2-Column Body */}
                 <div className="flex min-h-[260px] max-h-[360px]">
@@ -581,7 +581,7 @@ export default function Transactions({
         </div>
 
         {/* Right: Search Input (Matching "Search or jump to...") */}
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400 pointer-events-none">
             <Search className="w-3.5 h-3.5" />
           </span>
@@ -590,7 +590,7 @@ export default function Transactions({
             placeholder="Search or jump to..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-44 sm:w-56 pl-8 pr-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+            className="w-full sm:w-56 pl-8 pr-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
           />
         </div>
       </div>
@@ -605,25 +605,132 @@ export default function Transactions({
               <button
                 type="button"
                 onClick={handleClearAll}
-                className="mt-3 text-xs font-semibold px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors"
+                className="mt-3 text-xs font-semibold px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
               >
                 Clear all filters
               </button>
             )}
           </div>
         ) : (
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-b border-slate-100 dark:border-slate-800/80 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                <th className="py-3 px-3">Date</th>
-                <th className="py-3 px-3">To/From</th>
-                <th className="py-3 px-3">Category</th>
-                <th className="py-3 px-3">Payment Method</th>
-                <th className="py-3 px-3 text-right">Amount</th>
-                <th className="py-3 px-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100/80 dark:divide-slate-800/60">
+          <>
+            {/* Desktop Table View (>= 640px) */}
+            <table className="hidden sm:table w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-slate-100 dark:border-slate-800/80 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                  <th className="py-3 px-3">Date</th>
+                  <th className="py-3 px-3">To/From</th>
+                  <th className="py-3 px-3">Category</th>
+                  <th className="py-3 px-3">Payment Method</th>
+                  <th className="py-3 px-3 text-right">Amount</th>
+                  <th className="py-3 px-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100/80 dark:divide-slate-800/60">
+                {processedTransactions.map((transaction) => {
+                  const isIncome = transaction.type === 'income';
+                  const catInfo = (isIncome ? incomeSources : expenseCategories).find(
+                    (c) => c.id === transaction.category
+                  );
+
+                  const methodInfo = (paymentMethods || []).find(
+                    (m) => m.id === transaction.paymentMethod
+                  );
+
+                  return (
+                    <tr
+                      key={transaction.id}
+                      className="group hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors"
+                    >
+                      {/* 1. Date (e.g. Feb 5, 2026) */}
+                      <td className="py-3 px-3 text-slate-500 dark:text-slate-400 tabular-nums whitespace-nowrap">
+                        {formatDateLabel(transaction.date)}
+                      </td>
+
+                      {/* 2. To/From (Avatar Icon + Description) */}
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-2xs border border-slate-200/80 dark:border-slate-700 shrink-0">
+                            <CategoryIcon category={transaction.category} className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-xs text-slate-900 dark:text-slate-100 truncate flex items-center gap-1.5">
+                              <span>{transaction.note ? transaction.note : catInfo?.label || 'Other'}</span>
+                              {transaction.linkedLoanId && (
+                                <span className="inline-flex items-center gap-0.5 text-[10px] text-amber-600 dark:text-amber-400 font-semibold" title="Linked Loan">
+                                  <AlertCircle className="w-3 h-3" />
+                                </span>
+                              )}
+                            </p>
+                            {transaction.linkedLoanId && (
+                              <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold block">
+                                Loan principal/repayment
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* 3. Category (Colored pill badge like screenshot) */}
+                      <td className="py-3 px-3">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700">
+                          <CategoryIcon category={transaction.category} className="w-3 h-3 text-slate-500 shrink-0" />
+                          <span className="truncate max-w-[120px]">{catInfo?.label || 'Other'}</span>
+                        </span>
+                      </td>
+
+                      {/* 4. Payment Method */}
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[10px] font-medium text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700">
+                          <PaymentMethodIcon method={transaction.paymentMethod} className="w-3 h-3 text-slate-500 shrink-0" />
+                          <span>{methodInfo?.label || transaction.paymentMethod?.toUpperCase() || 'UPI'}</span>
+                        </span>
+                      </td>
+
+                      {/* 5. Amount */}
+                      <td className="py-3 px-3 text-right">
+                        <span
+                          className={`font-bold tabular-nums tracking-tight text-xs sm:text-sm ${
+                            isIncome
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : 'text-slate-900 dark:text-white'
+                          }`}
+                        >
+                          {isIncome ? '+' : '-'}
+                          {formatMoney(transaction.amount)}
+                        </span>
+                      </td>
+
+                      {/* 6. Actions */}
+                      <td className="py-3 px-3 text-right">
+                        <div className="flex items-center justify-end gap-1 opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                          {!transaction.linkedLoanId && (
+                            <button
+                              type="button"
+                              onClick={() => initiateEdit(transaction)}
+                              className="p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                              title="Edit transaction"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => deleteTransaction(transaction.id)}
+                            className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
+                            title="Delete transaction"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {/* Mobile Touch-Friendly Card View (< 640px) */}
+            <div className="sm:hidden divide-y divide-slate-100/80 dark:divide-slate-800/60">
               {processedTransactions.map((transaction) => {
                 const isIncome = transaction.type === 'income';
                 const catInfo = (isIncome ? incomeSources : expenseCategories).find(
@@ -635,19 +742,14 @@ export default function Transactions({
                 );
 
                 return (
-                  <tr
+                  <div
                     key={transaction.id}
-                    className="group hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors"
+                    className="py-3 px-1 flex flex-col gap-2 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 rounded-xl transition-colors"
                   >
-                    {/* 1. Date (e.g. Feb 5, 2026) */}
-                    <td className="py-3 px-3 text-slate-500 dark:text-slate-400 tabular-nums whitespace-nowrap">
-                      {formatDateLabel(transaction.date)}
-                    </td>
-
-                    {/* 2. To/From (Avatar Icon + Description) */}
-                    <td className="py-3 px-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-2xs border border-slate-200/80 dark:border-slate-700 shrink-0">
+                    <div className="flex items-start justify-between gap-2">
+                      {/* Left: Avatar + Title + Badges */}
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-2xs border border-slate-200/80 dark:border-slate-700 shrink-0 mt-0.5">
                           <CategoryIcon category={transaction.category} className="w-4 h-4" />
                         </div>
                         <div className="min-w-0">
@@ -659,73 +761,74 @@ export default function Transactions({
                               </span>
                             )}
                           </p>
-                          {transaction.linkedLoanId && (
-                            <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold block">
-                              Loan principal/repayment
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700">
+                              <CategoryIcon category={transaction.category} className="w-2.5 h-2.5 text-slate-500 shrink-0" />
+                              <span className="truncate max-w-[90px]">{catInfo?.label || 'Other'}</span>
                             </span>
-                          )}
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700">
+                              <PaymentMethodIcon method={transaction.paymentMethod} className="w-2.5 h-2.5 text-slate-400 shrink-0" />
+                              <span>{methodInfo?.label || transaction.paymentMethod?.toUpperCase() || 'UPI'}</span>
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </td>
 
-                    {/* 3. Category (Colored pill badge like screenshot) */}
-                    <td className="py-3 px-3">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700">
-                        <CategoryIcon category={transaction.category} className="w-3 h-3 text-slate-500 shrink-0" />
-                        <span className="truncate max-w-[120px]">{catInfo?.label || 'Other'}</span>
+                      {/* Right: Amount & Date */}
+                      <div className="text-right shrink-0">
+                        <span
+                          className={`font-bold tabular-nums tracking-tight text-sm ${
+                            isIncome
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : 'text-slate-900 dark:text-white'
+                          }`}
+                        >
+                          {isIncome ? '+' : '-'}
+                          {formatMoney(transaction.amount)}
+                        </span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 block tabular-nums mt-0.5">
+                          {formatDateLabel(transaction.date)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Footer row with actions */}
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-100/60 dark:border-slate-800/40 text-[11px]">
+                      <span className="text-slate-400 text-[10px]">
+                        {transaction.linkedLoanId ? (
+                          <span className="text-blue-600 dark:text-blue-400 font-medium">Loan record</span>
+                        ) : (
+                          'Standard transaction'
+                        )}
                       </span>
-                    </td>
-
-                    {/* 4. Payment Method */}
-                    <td className="py-3 px-3 whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[10px] font-medium text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700">
-                        <PaymentMethodIcon method={transaction.paymentMethod} className="w-3 h-3 text-slate-500 shrink-0" />
-                        <span>{methodInfo?.label || transaction.paymentMethod?.toUpperCase() || 'UPI'}</span>
-                      </span>
-                    </td>
-
-                    {/* 5. Amount */}
-                    <td className="py-3 px-3 text-right">
-                      <span
-                        className={`font-bold tabular-nums tracking-tight text-xs sm:text-sm ${
-                          isIncome
-                            ? 'text-emerald-600 dark:text-emerald-400'
-                            : 'text-slate-900 dark:text-white'
-                        }`}
-                      >
-                        {isIncome ? '+' : '-'}
-                        {formatMoney(transaction.amount)}
-                      </span>
-                    </td>
-
-                    {/* 6. Actions */}
-                    <td className="py-3 px-3 text-right">
-                      <div className="flex items-center justify-end gap-1 opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-2">
                         {!transaction.linkedLoanId && (
                           <button
                             type="button"
                             onClick={() => initiateEdit(transaction)}
-                            className="p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                            className="px-2.5 py-1 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-1 min-h-[36px] cursor-pointer"
                             title="Edit transaction"
                           >
-                            <Edit2 className="w-3.5 h-3.5" />
+                            <Edit2 className="w-3 h-3" />
+                            <span>Edit</span>
                           </button>
                         )}
                         <button
                           type="button"
                           onClick={() => deleteTransaction(transaction.id)}
-                          className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
+                          className="px-2.5 py-1 text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors flex items-center gap-1 min-h-[36px] cursor-pointer"
                           title="Delete transaction"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3 h-3" />
+                          <span>Delete</span>
                         </button>
                       </div>
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 );
               })}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
       </div>
     </div>

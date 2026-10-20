@@ -18,6 +18,9 @@ import {
   Search,
   AlertTriangle,
   AlertCircle,
+  Menu,
+  X,
+  Sliders,
 } from 'lucide-react';
 import './App.css';
 import { getTodayStr, getMonthString, monthLabel, sanitizeDate } from './utils/dates';
@@ -94,6 +97,7 @@ export default function App() {
   });
 
   const [transactionAnimation, setTransactionAnimation] = useState(null);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('clarity_api_key') || '');
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
@@ -1394,7 +1398,7 @@ export default function App() {
         )}
 
         {/* Left Sidebar (Desktop) matching reference */}
-        <aside className="hidden md:flex flex-col w-60 shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200/90 dark:border-slate-800 p-4 justify-between h-screen sticky top-0 z-40 no-print">
+        <aside className="hidden md:flex flex-col w-60 shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200/90 dark:border-slate-800 p-4 justify-between h-screen fixed top-0 left-0 z-40 no-print overflow-y-auto">
           <div>
             {/* Brand Logo & Name */}
             <div className="flex items-center gap-2.5 px-2 py-1 mb-4 text-blue-600 dark:text-blue-400">
@@ -1507,14 +1511,17 @@ export default function App() {
           </div>
         </aside>
 
+        {/* Desktop Sidebar Spacer to preserve flex flow */}
+        <div className="hidden md:block w-60 shrink-0 no-print" aria-hidden="true" />
+
         {/* Main Content Column */}
         <div className="flex-1 flex flex-col min-w-0 min-h-screen">
           {/* Top Header matching reference */}
-          <header className="h-16 px-4 sm:px-6 lg:px-8 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-800 flex items-center justify-between sticky top-0 z-30 no-print">
-            <div className="flex items-center gap-3">
-              <div className="md:hidden flex items-center gap-2 text-blue-600 dark:text-blue-400">
+          <header className="h-16 px-3 sm:px-6 lg:px-8 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-800 flex items-center justify-between sticky top-0 z-30 no-print">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="md:hidden flex items-center gap-1.5 text-blue-600 dark:text-blue-400 shrink-0">
                 <Activity className="w-5 h-5 shrink-0" />
-                <span className="font-bold text-sm text-slate-900 dark:text-white">Clarity</span>
+                <span className="font-bold text-sm text-slate-900 dark:text-white hidden min-[360px]:inline">Clarity</span>
               </div>
               <div className="hidden md:flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
                 <LayoutDashboard className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -1524,7 +1531,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium text-slate-600 dark:text-slate-300">
+            <div className="flex items-center gap-1.5 sm:gap-3 text-sm font-medium text-slate-600 dark:text-slate-300 shrink-0">
               <MonthPicker
                 selectedMonth={selectedMonth}
                 onSelectMonth={setSelectedMonth}
@@ -1534,23 +1541,33 @@ export default function App() {
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border-none rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 transition-colors cursor-pointer outline-none"
+                className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border-none rounded-xl px-2 sm:px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 transition-colors cursor-pointer outline-none"
               >
                 {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
               </select>
 
               <button
                 onClick={toggleDarkMode}
-                className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 md:hidden"
+                className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hidden min-[400px]:inline-flex md:hidden"
                 title="Toggle Theme"
               >
                 {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowMobileMenu(true)}
+                className="p-1.5 sm:p-2 rounded-xl bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 md:hidden transition-colors cursor-pointer"
+                title="Menu & Secondary Actions"
+                aria-label="Open menu"
+              >
+                <Menu className="w-4 h-4" />
               </button>
             </div>
           </header>
 
           {/* Main Page Area */}
-          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-20 md:pb-8">
+          <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-6 pb-24 md:pb-8">
             {warnings.length > 0 && activeTab === 'dashboard' && (
               <div className="animate-fade-in-up space-y-2 no-print">
                 {warnings.map((warn, i) => (
@@ -1701,7 +1718,7 @@ export default function App() {
       </main>
 
       {/* Mobile Bottom Navigation Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-3 py-1.5 flex items-center justify-around no-print">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-2 sm:px-3 py-1 flex items-center justify-around no-print safe-bottom shadow-lg">
         {[
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
           { id: 'transactions', label: 'Transactions', icon: ArrowRightLeft },
@@ -1715,16 +1732,139 @@ export default function App() {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-lg text-[10px] font-semibold transition-colors ${
-                isActive ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-slate-500 dark:text-slate-400'
+              className={`flex flex-col items-center justify-center min-h-[44px] min-w-[48px] py-1 px-1 rounded-xl text-[10px] font-semibold transition-colors cursor-pointer ${
+                isActive
+                  ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/70 dark:bg-blue-950/50'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <Icon className="w-4 h-4" />
-              <span>{item.label}</span>
+              <Icon className="w-4 h-4 shrink-0" />
+              <span className="truncate max-w-[62px] mt-0.5">{item.label}</span>
             </button>
           );
         })}
       </nav>
+
+      {/* Mobile Secondary Slide-Over Sheet / Drawer */}
+      {showMobileMenu && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+            onClick={() => setShowMobileMenu(false)}
+          />
+          <div className="relative ml-auto w-full max-w-xs bg-white dark:bg-slate-900 h-full p-5 flex flex-col justify-between shadow-2xl border-l border-slate-200 dark:border-slate-800 z-10 animate-drawer-in">
+            <div>
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 mb-4">
+                <div className="flex items-center gap-2.5 text-blue-600 dark:text-blue-400">
+                  <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black shadow-xs">
+                    <Activity className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">Clarity Finance</h2>
+                    <p className="text-[10px] text-slate-400">Utilities & Settings</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowMobileMenu(false)}
+                  className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
+                  aria-label="Close menu"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-1.5 text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowBudgetSettings(true);
+                    setShowMobileMenu(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer"
+                >
+                  <Sliders className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span>Budget Targets</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTempApiKey(apiKey);
+                    setShowApiKeyModal(true);
+                    setShowMobileMenu(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer"
+                >
+                  <Key className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span>AI Settings</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleExport();
+                    setShowMobileMenu(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer"
+                >
+                  <DownloadCloud className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span>Export Data</span>
+                </button>
+
+                <label
+                  className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer text-left"
+                >
+                  <Upload className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span>Import Data</span>
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={(e) => {
+                      handleImport(e);
+                      setShowMobileMenu(false);
+                    }}
+                    className="hidden"
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    handlePrint();
+                    setShowMobileMenu(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer"
+                >
+                  <Download className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span>Download Monthly PDF</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    toggleDarkMode();
+                  }}
+                  className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer"
+                >
+                  {isDarkMode ? <Sun className="w-4 h-4 text-amber-400 shrink-0" /> : <Moon className="w-4 h-4 text-slate-400 shrink-0" />}
+                  <span>{isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs shrink-0">
+                CF
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-slate-900 dark:text-white truncate">Personal Ledger</p>
+                <p className="text-[10px] text-slate-400 truncate">Clarity Finance</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
 
     <AiSettingsModal

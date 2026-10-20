@@ -219,7 +219,7 @@ export default function Forecast({
                 {projections.projectedBalance >= 0 ? 'Safe' : 'Deficit Risk'}
               </span>
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900 dark:text-white mt-1">
+            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900 dark:text-white mt-1 truncate">
               {formatMoney(projections.projectedBalance)}
             </div>
           </div>
@@ -246,7 +246,7 @@ export default function Forecast({
                 {projections.projectedSavings >= 0 ? '+ Surplus' : '- Overspent'}
               </span>
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900 dark:text-white mt-1">
+            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900 dark:text-white mt-1 truncate">
               {formatMoney(projections.projectedSavings)}
             </div>
           </div>
@@ -268,7 +268,7 @@ export default function Forecast({
                 {isCurrentForecastMonth ? 'Active Month' : 'Projected'}
               </span>
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900 dark:text-white mt-1">
+            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900 dark:text-white mt-1 truncate">
               {formatMoney(totalUpcomingCommitments)}
             </div>
           </div>

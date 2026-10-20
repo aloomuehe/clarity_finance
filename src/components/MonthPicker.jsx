@@ -33,7 +33,7 @@ export default function MonthPicker({ selectedMonth, onSelectMonth, monthLabel }
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} aria-hidden="true"></div>
-          <div className="absolute top-full right-0 mt-2 p-3.5 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200/90 dark:border-slate-800 z-50 w-64 animate-fade-in-up origin-top-right">
+          <div className="absolute top-full right-0 mt-2 p-3.5 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200/90 dark:border-slate-800 z-50 w-64 max-w-[calc(100vw-1.5rem)] animate-popover-in origin-top-right">
             <div className="flex justify-between items-center mb-3 pb-2.5 border-b border-slate-100 dark:border-slate-800">
               <button 
                 type="button"

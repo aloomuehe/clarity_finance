@@ -224,7 +224,7 @@ export default function DatePicker({
         <div
           className={`absolute ${openUpward ? 'bottom-full mb-1.5' : 'top-full mt-1.5'} ${
             align === 'right' ? 'right-0' : 'left-0'
-          } p-3.5 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200/90 dark:border-slate-800 z-50 w-64 animate-fade-in-up origin-top`}
+          } p-3.5 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200/90 dark:border-slate-800 z-50 w-64 max-w-[calc(100vw-2rem)] animate-popover-in origin-top`}
           role="dialog"
           aria-label="Date Picker"
         >

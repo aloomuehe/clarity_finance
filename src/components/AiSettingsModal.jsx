@@ -149,33 +149,33 @@ export default function AiSettingsModal({
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[80] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="dark-card bg-white dk-bg-slate-900 rounded-3xl w-full max-w-xl p-6 sm:p-8 relative shadow-2xl modal-spring border border-slate-200 dk-border-slate-800 max-h-[92vh] flex flex-col">
+      <div className="dark-card bg-white dk-bg-slate-900 rounded-3xl w-full max-w-xl p-4 sm:p-6 sm:p-8 relative shadow-2xl modal-spring border border-slate-200 dk-border-slate-800 max-h-[92vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between gap-3 mb-5 shrink-0">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             {view === 'form' && (
               <button
                 type="button"
                 onClick={() => setView('list')}
-                className="p-2 bg-slate-100 hover:bg-slate-200 dk-bg-slate-800 dk-hover-bg-slate-700 text-slate-700 dk-text-slate-200 rounded-xl transition-colors"
+                className="p-1.5 sm:p-2 bg-slate-100 hover:bg-slate-200 dk-bg-slate-800 dk-hover-bg-slate-700 text-slate-700 dk-text-slate-200 rounded-xl transition-colors shrink-0"
                 title="Back to saved proxies"
               >
                 <ArrowLeft className="w-4 h-4" />
               </button>
             )}
-            <div className="p-3 bg-indigo-100 dk-bg-indigo-900-30 rounded-2xl text-indigo-600 dk-text-indigo-400">
-              <Key className="w-5 h-5" />
+            <div className="p-2.5 sm:p-3 bg-indigo-100 dk-bg-indigo-900-30 rounded-2xl text-indigo-600 dk-text-indigo-400 shrink-0">
+              <Key className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900 dk-text-white">
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-xl font-bold text-slate-900 dk-text-white truncate">
                 {view === 'form'
                   ? (editingId ? 'Edit Proxy Configuration' : 'New Proxy Configuration')
                   : 'AI & API Settings'}
               </h2>
-              <p className="text-xs text-slate-500 dk-text-slate-400 font-medium">
+              <p className="text-[11px] sm:text-xs text-slate-500 dk-text-slate-400 font-medium truncate">
                 {view === 'form'
                   ? 'Configure an OpenAI-compatible proxy endpoint'
-                  : 'Manage AI providers and proxy connections for Receipt & Bulk Scan'}
+                  : 'Manage AI providers and proxy connections'}
               </p>
             </div>
           </div>

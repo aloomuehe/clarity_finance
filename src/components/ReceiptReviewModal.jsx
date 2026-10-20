@@ -116,24 +116,24 @@ function ReceiptReviewModalContent({
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden text-slate-800 dark:text-slate-100 modal-spring">
         
         {/* Header */}
-        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/40">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center shadow-inner">
-              <Receipt className="w-6 h-6" />
+        <div className="p-4 sm:p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/40">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center shadow-inner shrink-0">
+              <Receipt className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <div>
-              <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2 truncate">
                 Receipt Scanned
               </h2>
-              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 <span className="font-semibold text-purple-600 dark:text-purple-400">
                   {items.length} line item{items.length === 1 ? '' : 's'} detected
                 </span>
                 {merchant && (
                   <>
                     <span>•</span>
-                    <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
-                      <Store className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300 truncate">
+                      <Store className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       {merchant}
                     </span>
                   </>
@@ -142,7 +142,7 @@ function ReceiptReviewModalContent({
                   <>
                     <span>•</span>
                     <span className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                      <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       {receiptDate}
                     </span>
                   </>
@@ -153,7 +153,7 @@ function ReceiptReviewModalContent({
 
           <button
             onClick={onClose}
-            className="p-2 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="p-1.5 sm:p-2 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0 cursor-pointer"
             title="Close"
           >
             <X className="w-5 h-5" />
@@ -161,7 +161,7 @@ function ReceiptReviewModalContent({
         </div>
 
         {/* Scrollable Content */}
-        <div className="p-6 overflow-y-auto space-y-4 flex-1">
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1">
 
           {/* Verification Banner */}
           {receiptTotal !== null ? (
@@ -178,8 +178,8 @@ function ReceiptReviewModalContent({
                 ) : (
                   <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                 )}
-                <div className="flex-1 text-sm">
-                  <div className="font-semibold flex items-center justify-between">
+                <div className="flex-1 text-sm min-w-0">
+                  <div className="font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                     <span>
                       {isExactTotalVerified
                         ? 'Receipt total verified'

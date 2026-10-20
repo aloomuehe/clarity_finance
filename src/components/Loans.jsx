@@ -318,11 +318,11 @@ export default function Loans({
           {/* Tabs & Sub-filters Header */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             {/* Top-level filter: Lent | Borrowed | Completed */}
-            <div className="inline-flex bg-slate-100 dark:bg-slate-800/80 dk-bg-slate-900 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60 dk-border-slate-700">
+            <div className="inline-flex flex-wrap bg-slate-100 dark:bg-slate-800/80 dk-bg-slate-900 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60 dk-border-slate-700 max-w-full">
               <button
                 type="button"
                 onClick={() => setLoanFilter('lent')}
-                className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={`px-2.5 sm:px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   loanFilter === 'lent'
                     ? 'bg-white dark:bg-slate-900 dk-bg-slate-700 text-blue-600 dark:text-blue-400 font-bold shadow-2xs'
                     : 'text-slate-600 dark:text-slate-400 dk-text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'
@@ -333,7 +333,7 @@ export default function Loans({
               <button
                 type="button"
                 onClick={() => setLoanFilter('borrowed')}
-                className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={`px-2.5 sm:px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   loanFilter === 'borrowed'
                     ? 'bg-white dark:bg-slate-900 dk-bg-slate-700 text-blue-600 dark:text-blue-400 font-bold shadow-2xs'
                     : 'text-slate-600 dark:text-slate-400 dk-text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'
@@ -344,7 +344,7 @@ export default function Loans({
               <button
                 type="button"
                 onClick={() => setLoanFilter('completed')}
-                className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={`px-2.5 sm:px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   loanFilter === 'completed'
                     ? 'bg-white dark:bg-slate-900 dk-bg-slate-700 text-blue-600 dark:text-blue-400 font-bold shadow-2xs'
                     : 'text-slate-600 dark:text-slate-400 dk-text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'
@@ -492,8 +492,8 @@ export default function Loans({
 
                   {/* Inline Repayment Row (if not settled) */}
                   {!isSettled ? (
-                    <div className="flex items-center gap-2 pt-1">
-                      <div className="relative flex-1">
+                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 pt-1">
+                      <div className="relative flex-1 min-w-[120px]">
                         <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 dark:text-slate-500 pointer-events-none">
                           <CurrencyIcon className="w-3.5 h-3.5" />
                         </span>
@@ -517,7 +517,7 @@ export default function Loans({
                       <button
                         type="button"
                         onClick={() => recordLoanPayment(loan.id)}
-                        className="h-9 px-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl text-xs font-semibold shadow-2xs transition-colors shrink-0 cursor-pointer"
+                        className="h-9 px-3.5 sm:px-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl text-xs font-semibold shadow-2xs transition-colors shrink-0 cursor-pointer"
                       >
                         Record
                       </button>
@@ -538,7 +538,7 @@ export default function Loans({
       {/* Edit Loan Modal */}
       {editingLoan && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[80] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 dk-bg-slate-900 rounded-3xl w-full max-w-md p-6 relative shadow-2xl animate-fade-in-up border border-slate-200/90 dark:border-slate-800 dk-border-slate-800">
+          <div className="bg-white dark:bg-slate-900 dk-bg-slate-900 rounded-3xl w-full max-w-md p-6 relative shadow-2xl modal-spring border border-slate-200/90 dark:border-slate-800 dk-border-slate-800">
             <div className="flex items-center justify-between gap-3 mb-5">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-900/40">

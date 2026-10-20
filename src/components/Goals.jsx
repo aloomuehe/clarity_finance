@@ -644,7 +644,7 @@ export default function Goals({
                       {activeMenuId === g.id && (
                         <div
                           ref={menuRef}
-                          className="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg py-1 z-30 animate-fade-in-up"
+                          className="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg py-1 z-30 animate-popover-in origin-top-right"
                         >
                           <button
                             type="button"
@@ -682,7 +682,7 @@ export default function Goals({
                 </div>
 
                 {/* Metrics Row: Saved, Remaining / Goal reached, Target date */}
-                <div className="flex items-center justify-between text-xs font-semibold gap-2 pt-0.5">
+                <div className="flex flex-wrap items-center justify-between gap-y-1.5 gap-x-2 text-xs font-semibold pt-0.5">
                   <span className="text-blue-600 dark:text-blue-400 font-bold tabular-nums">
                     {formatMoney(current)} saved
                   </span>
@@ -702,8 +702,8 @@ export default function Goals({
                 </div>
 
                 {/* Quick Add / Remove Contribution Bar */}
-                <div className="flex items-center gap-2 pt-1">
-                  <div className="relative flex-1">
+                <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 pt-1">
+                  <div className="relative flex-1 min-w-[120px]">
                     <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 dark:text-slate-500 pointer-events-none">
                       <CurrencyIcon className="w-3.5 h-3.5" />
                     </span>
@@ -748,7 +748,7 @@ export default function Goals({
       {/* 4. Edit Goal Modal */}
       {editingGoal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[80] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 dk-bg-slate-900 rounded-3xl w-full max-w-md p-6 relative shadow-2xl animate-fade-in-up border border-slate-200/90 dark:border-slate-800 dk-border-slate-800">
+          <div className="bg-white dark:bg-slate-900 dk-bg-slate-900 rounded-3xl w-full max-w-md p-6 relative shadow-2xl modal-spring border border-slate-200/90 dark:border-slate-800 dk-border-slate-800">
             <div className="flex items-center justify-between gap-3 mb-5">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-900/40">
